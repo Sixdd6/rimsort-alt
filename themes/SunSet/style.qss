@@ -326,6 +326,16 @@ QToolTip {
     background: #ff4500;
     color: #ffffff;
 }
+/* Update Log hover preview popup: styled like tooltips */
+QFrame#updateLogPreviewPopup {
+    background: #ff4500;
+    color: #ffffff;
+    border: 1px solid #ffffff;
+}
+QFrame#updateLogPreviewPopup QLabel {
+    background: transparent;
+    color: #ffffff;
+}
 /* Default style for vertical scrollbars */
 QScrollBar:vertical {
     border: 1px solid #4a3a3a;

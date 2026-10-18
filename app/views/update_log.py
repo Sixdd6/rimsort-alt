@@ -216,6 +216,8 @@ class _PreviewPopup(QFrame):
         super().__init__(
             None, Qt.WindowType.ToolTip | Qt.WindowType.WindowDoesNotAcceptFocus
         )
+        # Themes style this name like their tooltips (see themes/*/style.qss)
+        self.setObjectName("updateLogPreviewPopup")
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
         self.setFrameShape(QFrame.Shape.Box)
         self.setAutoFillBackground(True)
@@ -1007,7 +1009,9 @@ class UpdateLogDelegate(QStyledItemDelegate):
         font = option.font
         font.setUnderline(True)
         painter.setFont(font)
-        painter.setPen(option.palette.color(QPalette.ColorRole.Link))
+        # Themes style the text colour but not the palette's Link role, so the
+        # underline alone marks this as a link
+        painter.setPen(option.palette.color(QPalette.ColorRole.Text))
         painter.drawText(option.rect, Qt.AlignmentFlag.AlignCenter, self._link_text())
         painter.restore()
 

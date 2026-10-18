@@ -428,3 +428,13 @@ def test_hovering_a_mod_shows_its_preview_beside_the_row(
     group_index = panel.editor_model.index(0, ColumnIndex.NAME.value)
     _hover(view, view.visualRect(group_index).center())
     qtbot.waitUntil(lambda: not panel._preview_popup.isVisible(), timeout=3000)
+
+
+def test_every_theme_styles_the_preview_popup(panel: UpdateLog) -> None:
+    assert panel._preview_popup.objectName() == "updateLogPreviewPopup"
+    themes = sorted(Path("themes").glob("*/style.qss"))
+    assert themes
+    for theme in themes:
+        assert "QFrame#updateLogPreviewPopup" in theme.read_text(encoding="utf-8"), (
+            theme
+        )
