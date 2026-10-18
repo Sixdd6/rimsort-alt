@@ -1,6 +1,7 @@
 """Tests for git URL parsing utilities."""
 
-from app.utils.git_utils import git_get_repo_name, parse_git_url
+from app.utils.generic import INTERNET_CHECK_TIMEOUT_S
+from app.utils.git_utils import GitOperationConfig, git_get_repo_name, parse_git_url
 
 
 class TestParseGitUrl:
@@ -159,3 +160,11 @@ class TestGitGetRepoName:
     def test_browse_url_returns_repo_not_branch(self) -> None:
         name = git_get_repo_name("https://github.com/user/MyMod/tree/some-branch")
         assert name == "MyMod"
+
+
+def test_git_connection_check_uses_short_internet_timeout() -> None:
+    assert GitOperationConfig().connection_timeout == INTERNET_CHECK_TIMEOUT_S
+    assert (
+        GitOperationConfig.create_with_timeout().connection_timeout
+        == INTERNET_CHECK_TIMEOUT_S
+    )

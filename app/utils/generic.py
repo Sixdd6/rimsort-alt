@@ -725,9 +725,16 @@ def find_steam_rimworld(steam_folder: Path | str) -> str:
     return str(full_rimworld_path) if rimworld_path else rimworld_path
 
 
-def check_internet_connection(timeout: float = 10) -> bool:
+# A reachability probe, not a download: healthy hosts answer well under a second
+INTERNET_CHECK_TIMEOUT_S = 3
+
+
+def check_internet_connection(timeout: float = INTERNET_CHECK_TIMEOUT_S) -> bool:
     """
     Check if there is an active internet connection by verifying access to Steam and GitHub.
+
+    Runs on the GUI thread at its call sites, so the timeout bounds how long the
+    UI can stall when the network silently drops packets.
 
     :param timeout: Timeout in seconds for each connection attempt
     :return: True if at least one service is accessible, False otherwise

@@ -1,9 +1,12 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+import requests
 
 from app.utils.generic import (
+    INTERNET_CHECK_TIMEOUT_S,
     apply_launch_prefix,
+    check_internet_connection,
     check_valid_http_git_url,
     extract_git_dir_name,
     extract_git_user_or_org,
@@ -129,3 +132,27 @@ class TestApplyLaunchPrefix:
             "/games/RimWorld",
             ["-a"],
         )
+
+
+class TestCheckInternetConnection:
+    def test_first_reachable_host_short_circuits_with_short_timeout(self) -> None:
+        with patch("app.utils.generic.http.head") as head:
+            assert check_internet_connection() is True
+
+        head.assert_called_once_with(
+            "https://steamcommunity.com", timeout=INTERNET_CHECK_TIMEOUT_S
+        )
+        assert INTERNET_CHECK_TIMEOUT_S <= 3
+
+    def test_all_hosts_failing_reports_and_returns_false(self) -> None:
+        with (
+            patch(
+                "app.utils.generic.http.head",
+                side_effect=requests.exceptions.ConnectionError("down"),
+            ) as head,
+            patch("app.utils.generic.dialogue.show_internet_connection_error") as warn,
+        ):
+            assert check_internet_connection() is False
+
+        assert head.call_count == 2
+        warn.assert_called_once()

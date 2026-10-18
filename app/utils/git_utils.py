@@ -15,7 +15,11 @@ from urllib.parse import urlparse
 from loguru import logger
 from PySide6.QtWidgets import QMessageBox
 
-from app.utils.generic import check_internet_connection, delete_files_with_condition
+from app.utils.generic import (
+    INTERNET_CHECK_TIMEOUT_S,
+    check_internet_connection,
+    delete_files_with_condition,
+)
 
 # Import pygit2 (and its submodules) through the SSL-safe loader so libgit2's
 # TLS certificate locations are initialized correctly in bundled builds. See
@@ -85,7 +89,7 @@ class GitOperationConfig:
     notify_errors: bool = True
     notification_handler: GitNotificationHandler | None = None
     fetch_timeout: int = 30  # Timeout for fetch operations in seconds
-    connection_timeout: int = 10  # Timeout for connection checks in seconds
+    connection_timeout: int = INTERNET_CHECK_TIMEOUT_S  # Connection check timeout (s)
 
     def __post_init__(self) -> None:
         if self.notification_handler is None:
@@ -107,7 +111,7 @@ class GitOperationConfig:
 
     @classmethod
     def create_with_timeout(
-        cls, fetch_timeout: int = 30, connection_timeout: int = 10
+        cls, fetch_timeout: int = 30, connection_timeout: int = INTERNET_CHECK_TIMEOUT_S
     ) -> GitOperationConfig:
         """Create a config with custom timeout values."""
         return cls(fetch_timeout=fetch_timeout, connection_timeout=connection_timeout)
