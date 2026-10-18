@@ -38,7 +38,6 @@ from app.utils.gui_info import GUIInfo
 from app.utils.steam.steamcmd.wrapper import SteamcmdInterface
 from app.utils.watchdog import WatchdogHandler
 from app.utils.window_launch_state import apply_window_launch_state
-from app.views.acf_log_reader import AcfLogReader
 from app.views.dialogue import BinaryChoiceDialog
 from app.views.file_search_dialog import FileSearchDialog
 from app.views.main_content_panel import MainContent
@@ -46,6 +45,7 @@ from app.views.menu_bar import MenuBar
 from app.views.player_log_tab import PlayerLogTab
 from app.views.status_panel import Status
 from app.views.troubleshooting_dialog import TroubleshootingDialog
+from app.views.update_log import UpdateLog
 
 
 class MainWindow(QMainWindow):
@@ -156,19 +156,18 @@ class MainWindow(QMainWindow):
 
         self.tab_widget.addTab(self.main_content_tab, self.tr("Main Content"))
 
-        # Create and add the ACF Data tab
-        self.acf_log_reader_tab = QWidget()
-        self.acf_log_reader_layout = QVBoxLayout()
-        self.acf_log_reader_tab.setLayout(self.acf_log_reader_layout)
+        # Create and add the Update Log tab
+        self.update_log_tab = QWidget()
+        self.update_log_layout = QVBoxLayout()
+        self.update_log_tab.setLayout(self.update_log_layout)
 
-        # Instantiate the AcfDataWindow and add it to the tab
-        self.acf_log_reader = AcfLogReader(
+        self.update_log = UpdateLog(
             metadata_controller=self.metadata_controller,
             active_mods_list=self.main_content_panel.mods_panel.active_mods_list,
         )
-        self.acf_log_reader_layout.addWidget(self.acf_log_reader)
+        self.update_log_layout.addWidget(self.update_log)
 
-        self.tab_widget.addTab(self.acf_log_reader_tab, self.tr("ACF Log Reader"))
+        self.tab_widget.addTab(self.update_log_tab, self.tr("Update Log"))
 
         # Create and add the Player Log tab
         self.player_log_widget = PlayerLogTab(self.settings)

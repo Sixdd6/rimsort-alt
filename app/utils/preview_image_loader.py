@@ -49,15 +49,20 @@ class PreviewImageLoader(QObject):
         cache_size: int = 64,
         max_side: int = 1024,
         parent: QObject | None = None,
+        cancel_pending: bool = True,
     ) -> None:
         """
         :param cache_size: Number of decoded images to keep.
         :param max_side: Larger images are scaled down to fit this many pixels.
         :param parent: Optional Qt parent.
+        :param cancel_pending: Drop queued decodes when a new one is requested
+            (right for a single preview that follows the selection); False keeps
+            them all, for thumbnail lists.
         """
         super().__init__(parent)
         self.max_side = max_side
         self._cache_size = cache_size
+        self._cancel_pending = cancel_pending
         self._cache: OrderedDict[_CacheKey, QImage] = OrderedDict()
         self._in_flight: set[_CacheKey] = set()
         self._pool = QThreadPool(self)
@@ -82,9 +87,12 @@ class PreviewImageLoader(QObject):
             self._cache.move_to_end(key)
             return cached
         if key not in self._in_flight:
-            # Drop decodes queued for images the user has already moved past
-            self._pool.clear()
-            self._in_flight = {key}
+            if self._cancel_pending:
+                # Drop decodes queued for images the user has already moved past
+                self._pool.clear()
+                self._in_flight = {key}
+            else:
+                self._in_flight.add(key)
             self._pool.start(_DecodeTask(self, key))
         return None
 

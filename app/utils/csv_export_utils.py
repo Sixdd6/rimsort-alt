@@ -187,7 +187,7 @@ def _write_csv_metadata(panel: BaseModsPanel, writer: Any) -> None:
     writer.writerow([f"Export Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"])  # noqa: DTZ005
     writer.writerow([f"Total Items: {model.rowCount()}"])
 
-    # Add SteamCMD ACF path if available (AcfLogReader has this)
+    # Add SteamCMD ACF path if available (UpdateLog has this)
     acf_path = None
     if (
         hasattr(panel, "metadata_controller")

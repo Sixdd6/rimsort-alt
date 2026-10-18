@@ -693,8 +693,8 @@ QWidget#missingModPropertiesPanel {
     color: #e6edf3;
 }
 
-/* AcfLogReader styling */
-QWidget#AcfLogReader {
+/* UpdateLog styling */
+QWidget#UpdateLog {
     background-color: #19232d;
     border-style: solid;
     border-color: #455364;

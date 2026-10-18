@@ -87,6 +87,9 @@ class BaseModsPanel(QWidget):
     Base class used for multiple panels that display a list of mods.
     """
 
+    # Embedded views (tabs) stay open after actions and ignore Escape
+    persistent_view: bool = False
+
     # Type hints for instance variables
     metadata_controller: MetadataController
     settings: Any
@@ -321,8 +324,7 @@ class BaseModsPanel(QWidget):
         if event.type() == QEvent.Type.KeyPress:
             key_event = QKeyEvent(event)  # type: ignore
             if key_event.key() == Qt.Key.Key_Escape:
-                # Don't close AcfLogReader on Escape key (it's a persistent view)
-                if self.__class__.__name__ != "AcfLogReader":
+                if not self.persistent_view:
                     self.close()
                 return True
 
@@ -400,8 +402,7 @@ class BaseModsPanel(QWidget):
             completed()
 
         # Close the panel window after triggering operations
-        # Don't close AcfLogReader (it's a persistent view, not a dialog)
-        if self.__class__.__name__ != "AcfLogReader":
+        if not self.persistent_view:
             self.close()
 
     def _collect_pfids_by_mode(
