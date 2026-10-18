@@ -643,17 +643,43 @@ class MainContent(QObject):
         # List error/warnings are automatically recalculated when a mod is inserted/removed from a list
 
     def _insert_data_into_lists(
-        self, active_mods_uuids: list[str], inactive_mods_uuids: list[str]
+        self,
+        active_mods_uuids: list[str],
+        inactive_mods_uuids: list[str],
+        skip_unchanged_inactive: bool = False,
     ) -> None:
         """
         Insert active mods and inactive mods into respective mod list widgets.
 
+        Painting of the mods panel is frozen until both lists are rebuilt and
+        their visible rows have widgets, so the user sees one reflow rather
+        than empty or half-built lists.
+
         :param active_mods_uuids: list of active mod uuids
         :param inactive_mods_uuids: list of inactive mod uuids
+        :param skip_unchanged_inactive: leave the inactive list as it is when its
+            sorted order would not change (only safe when mod metadata is unchanged)
         """
         logger.info(
             f"Inserting mod data into active [{len(active_mods_uuids)}] and inactive [{len(inactive_mods_uuids)}] mod lists"
         )
+        self.mods_panel.setUpdatesEnabled(False)
+        try:
+            self._rebuild_lists(
+                active_mods_uuids, inactive_mods_uuids, skip_unchanged_inactive
+            )
+        finally:
+            self.mods_panel.setUpdatesEnabled(True)
+        logger.info(
+            f"Finished inserting mod data into active [{len(active_mods_uuids)}] and inactive [{len(inactive_mods_uuids)}] mod lists"
+        )
+
+    def _rebuild_lists(
+        self,
+        active_mods_uuids: list[str],
+        inactive_mods_uuids: list[str],
+        skip_unchanged_inactive: bool,
+    ) -> None:
         # Snapshot live divider state before the list is cleared
         live_dividers = self.mods_panel.active_mods_list.get_dividers_data()
         if live_dividers:
@@ -668,21 +694,22 @@ class MainContent(QObject):
         # Use current UI state from the combobox and button for inactive mods.
         sort_key = ModsPanelSortKey[self.mods_panel.inactive_mods_sort_key]
         descending = self.mods_panel.inactive_sort_descending
-        self.mods_panel.inactive_mods_list.recreate_mod_list_and_sort(
-            list_type="inactive",
-            uuids=inactive_mods_uuids,
-            key=sort_key,
-            descending=descending,
+        inactive_rebuilt = (
+            self.mods_panel.inactive_mods_list.recreate_mod_list_and_sort(
+                list_type="inactive",
+                uuids=inactive_mods_uuids,
+                key=sort_key,
+                descending=descending,
+                skip_if_unchanged=skip_unchanged_inactive,
+            )
         )
         self.mods_panel.active_mods_list._latest_save_package_ids = None
-        self.mods_panel.inactive_mods_list._latest_save_package_ids = None
         self.mods_panel.recalculate_list_errors_warnings("Active")
-        self.mods_panel.recalculate_list_errors_warnings("Inactive")
         self.mods_panel.active_mods_list.repolish_all_items()
-        self.mods_panel.inactive_mods_list.repolish_all_items()
-        logger.info(
-            f"Finished inserting mod data into active [{len(active_mods_uuids)}] and inactive [{len(inactive_mods_uuids)}] mod lists"
-        )
+        if inactive_rebuilt:
+            self.mods_panel.inactive_mods_list._latest_save_package_ids = None
+            self.mods_panel.recalculate_list_errors_warnings("Inactive")
+            self.mods_panel.inactive_mods_list.repolish_all_items()
         # Recalculate warnings for both lists
         # self.mods_panel.active_mods_list.recalculate_warnings_signal.emit()
         # self.mods_panel.inactive_mods_list.recalculate_warnings_signal.emit()
@@ -1051,12 +1078,7 @@ class MainContent(QObject):
         # Clear dividers on list clear
         self.settings.active_mods_dividers = []
         self.settings.save()
-        # Disable widgets while inserting
-        self.disable_enable_widgets_signal.emit(False)
-        # Insert data into lists
         self._insert_data_into_lists(active_mods_uuids, inactive_mods_uuids)
-        # Re-enable widgets after inserting
-        self.disable_enable_widgets_signal.emit(True)
 
     def _do_sort(self, check_deps: bool = True) -> None:
         """
@@ -1185,9 +1207,6 @@ class MainContent(QObject):
                 div["collapsed"] = False
             self.settings.active_mods_dividers = saved_dividers
             self.settings.save()
-            # Disable widgets while inserting
-            self.disable_enable_widgets_signal.emit(False)
-            # Insert data into lists
             new_order_set = set(new_order)
             self._insert_data_into_lists(
                 new_order,
@@ -1196,9 +1215,8 @@ class MainContent(QObject):
                     for uuid in self.metadata_controller.mods_metadata
                     if uuid not in new_order_set
                 ],
+                skip_unchanged_inactive=True,
             )
-            # Enable widgets again after inserting
-            self.disable_enable_widgets_signal.emit(True)
             logger.info("Insertion finished!")
         elif success and new_order == current_order:
             logger.info(
@@ -1951,15 +1969,10 @@ class MainContent(QObject):
             logger.info(
                 f"Restoring cached mod lists with active list [{len(self.active_mods_uuids_restore_state)}] and inactive list [{len(self.inactive_mods_uuids_restore_state)}]"
             )
-            # Disable widgets while inserting
-            self.disable_enable_widgets_signal.emit(False)
-            # Insert items into lists
             self._insert_data_into_lists(
                 self.active_mods_uuids_restore_state,
                 self.inactive_mods_uuids_restore_state,
             )
-            # Reenable widgets after inserting
-            self.disable_enable_widgets_signal.emit(True)
         else:
             logger.warning(
                 "Cached mod lists for restore function not set as client started improperly. Passing on restore"

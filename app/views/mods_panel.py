@@ -3908,7 +3908,8 @@ class ModListWidget(QListWidget):
         uuids: list[str],
         key: ModsPanelSortKey,
         descending: bool = False,
-    ) -> None:
+        skip_if_unchanged: bool = False,
+    ) -> bool:
         """
         Reconstructs and sorts a mod list based on provided UUIDs and a sorting key.
 
@@ -3921,9 +3922,11 @@ class ModListWidget(QListWidget):
             key (ModsPanelSortKey): An enumeration value that determines the
                                      sorting criterion for the mods.
             descending (bool, optional): Whether to sort in descending order. Defaults to False.
+            skip_if_unchanged (bool, optional): Keep the current list when the sorted
+                order equals it. Only safe when mod metadata has not changed.
 
         Returns:
-            None
+            bool: True if the list was rebuilt, False if it was left as is.
         """
         sorted_uuids = sort_paths(
             uuids,
@@ -3931,7 +3934,11 @@ class ModListWidget(QListWidget):
             descending=descending,
             settings=self.settings,
         )
+        if skip_if_unchanged and sorted_uuids == self.paths:
+            logger.info(f"{list_type} mod list order is unchanged; keeping it")
+            return False
         self.recreate_mod_list(list_type, sorted_uuids, filtering=True)
+        return True
 
     def recreate_mod_list(
         self, list_type: str, uuids: list[str], filtering: bool = False
@@ -4032,9 +4039,9 @@ class ModListWidget(QListWidget):
         self.model().rowsAboutToBeRemoved.connect(
             self.handle_rows_removed, Qt.ConnectionType.QueuedConnection
         )
-        # Enable updates and repaint
+        # Re-enable updates; the repaint this schedules runs after the visible
+        # rows below have their widgets, so blank rows are never shown
         self.setUpdatesEnabled(True)
-        self.repaint()
         # Load visible widgets after rebuild completes
         self.check_widgets_visible()
         # Emit signal to update counts and errors/warnings

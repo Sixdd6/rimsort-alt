@@ -50,4 +50,6 @@ def test_sort_reinserts_when_order_changes(
 
     _sort_returning(mc, ["/m/b", "/m/a"])
 
-    insert.assert_called_once_with(["/m/b", "/m/a"], ["/m/inactive"])
+    insert.assert_called_once_with(
+        ["/m/b", "/m/a"], ["/m/inactive"], skip_unchanged_inactive=True
+    )
