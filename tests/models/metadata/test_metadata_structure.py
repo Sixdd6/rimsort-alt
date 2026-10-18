@@ -8,6 +8,7 @@ from app.models.metadata.metadata_structure import (
     ListedMod,
     ModType,
     SteamDbEntry,
+    find_preview_image,
 )
 
 
@@ -408,3 +409,44 @@ def test_steam_db_entry_tags_default_empty() -> None:
     """SteamDbEntry tags should default to empty list."""
     entry = SteamDbEntry()
     assert entry.tags == []
+
+
+class TestFindPreviewImage:
+    @staticmethod
+    def _mod(tmp_path: Path, about: str, *names: str) -> Path:
+        folder = tmp_path / "mod" / about
+        folder.mkdir(parents=True)
+        for name in names:
+            (folder / name).write_bytes(b"\x89PNG")
+        return tmp_path / "mod"
+
+    def test_documented_name(self, tmp_path: Path) -> None:
+        mod = self._mod(tmp_path, "About", "Preview.png")
+        assert find_preview_image(mod) == mod / "About" / "Preview.png"
+
+    @pytest.mark.parametrize("name", ["preview.png", "Preview.PNG", "PREVIEW.Png"])
+    def test_any_case(self, tmp_path: Path, name: str) -> None:
+        mod = self._mod(tmp_path, "About", name)
+        assert find_preview_image(mod) == mod / "About" / name
+
+    def test_lowercase_about_folder_and_jpeg(self, tmp_path: Path) -> None:
+        mod = self._mod(tmp_path, "about", "Preview.jpg")
+        assert find_preview_image(mod) == mod / "about" / "Preview.jpg"
+
+    def test_png_preferred_over_jpg(self, tmp_path: Path) -> None:
+        mod = self._mod(tmp_path, "About", "preview.jpg", "preview.png")
+        assert find_preview_image(mod) == mod / "About" / "preview.png"
+
+    def test_other_images_do_not_count(self, tmp_path: Path) -> None:
+        mod = self._mod(tmp_path, "About", "ModIcon.png", "preview2.png")
+        assert find_preview_image(mod) is None
+
+    def test_missing_about_or_mod(self, tmp_path: Path) -> None:
+        (tmp_path / "bare").mkdir()
+        assert find_preview_image(tmp_path / "bare") is None
+        assert find_preview_image(tmp_path / "nope") is None
+
+    def test_about_xml_mod_resolves_lowercase_preview(self, tmp_path: Path) -> None:
+        mod_path = self._mod(tmp_path, "About", "preview.png")
+        mod = AboutXmlMod(name="x", _mod_path=mod_path)
+        assert mod.preview_img_path == mod_path / "About" / "preview.png"

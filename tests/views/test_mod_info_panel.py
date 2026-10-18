@@ -336,16 +336,29 @@ def test_stale_folder_size_results_are_ignored(panel: ModInfoPanel) -> None:
     assert panel.mod_info_folder_size_value.text() == format_file_size(12345)
 
 
+def _loaded_preview_size(panel: ModInfoPanel, qtbot: Any, mod_path: Path) -> QSize:
+    """Load the preview for ``mod_path`` and return the decoded pixmap's size."""
+    panel._load_preview_image({"path": str(mod_path)}, is_scenario=False)
+    qtbot.waitUntil(lambda: panel._pending_preview_path is None, timeout=5000)
+    pixmap = panel.preview_picture._original_pixmap
+    assert pixmap is not None
+    return pixmap.size()
+
+
 def test_preview_image_is_shown_after_background_decode(
     panel: ModInfoPanel, qtbot: Any, tmp_path: Path
 ) -> None:
     write_png(tmp_path / "About" / "Preview.png", 64, 32)
 
-    panel._load_preview_image({"path": str(tmp_path)}, is_scenario=False)
+    assert _loaded_preview_size(panel, qtbot, tmp_path) == QSize(64, 32)
 
-    qtbot.waitUntil(lambda: panel._pending_preview_path is None, timeout=5000)
-    assert panel.preview_picture._original_pixmap is not None
-    assert panel.preview_picture._original_pixmap.size() == QSize(64, 32)
+
+def test_preview_image_is_found_regardless_of_case(
+    panel: ModInfoPanel, qtbot: Any, tmp_path: Path
+) -> None:
+    write_png(tmp_path / "about" / "preview.PNG", 20, 10)
+
+    assert _loaded_preview_size(panel, qtbot, tmp_path) == QSize(20, 10)
 
 
 def test_stale_preview_result_is_ignored(panel: ModInfoPanel, tmp_path: Path) -> None:

@@ -22,14 +22,19 @@ from app.controllers.metadata_controller import MetadataController
 from app.controllers.metadata_db_controller import AuxMetadataController
 from app.models.image_label import ImageLabel
 from app.models.metadata.metadata_db import Base
-from app.models.metadata.metadata_structure import AboutXmlMod, ListedMod, ScenarioMod
+from app.models.metadata.metadata_structure import (
+    AboutXmlMod,
+    ListedMod,
+    ScenarioMod,
+    find_preview_image,
+)
 from app.models.settings import Settings
 from app.sort.mod_sorting import FolderSizeRequestWorker
 from app.utils.app_info import AppInfo
 from app.utils.aux_db_utils import auxdb_get_mod_tags
 from app.utils.custom_list_widget_item import CustomListWidgetItem
 from app.utils.event_bus import EventBus
-from app.utils.generic import format_file_size, platform_specific_open, scanpath
+from app.utils.generic import format_file_size, platform_specific_open
 from app.utils.github.models import CacheBase, GitHubModEntry, GitHubReleaseCache
 from app.utils.github.provider import GitHubProvider, _releases_from_json
 from app.utils.mod_info import UNKNOWN, ModInfo
@@ -987,58 +992,15 @@ class ModInfoPanel:
                 self._placeholder_pixmap(self.scenario_image_path)
             )
         else:
-            # Get Preview.png
-            workshop_folder_path = mod_metadata.get("path", "")
-            logger.debug(
-                f"Retrieved mod path to parse preview image: {workshop_folder_path}"
-            )
-            if os.path.exists(workshop_folder_path):
-                about_folder_name = "About"
-                about_folder_target_path = str(
-                    Path(workshop_folder_path) / about_folder_name
+            mod_path = mod_metadata.get("path", "")
+            preview = find_preview_image(Path(mod_path)) if mod_path else None
+            if preview is None:
+                logger.debug("No preview image found for the mod")
+                self.preview_picture.setPixmap(
+                    self._placeholder_pixmap(self.missing_image_path)
                 )
-                if os.path.exists(about_folder_target_path):
-                    # Look for a case-insensitive About folder
-                    invalid_folder_path_found = True
-                    for temp_file in scanpath(workshop_folder_path):
-                        if (
-                            temp_file.name.lower() == about_folder_name.lower()
-                            and temp_file.is_dir()
-                        ):
-                            about_folder_name = temp_file.name
-                            invalid_folder_path_found = False
-                            break
-                    # Look for a case-insensitive "Preview.png" file
-                    invalid_file_path_found = True
-                    preview_file_name = "Preview.png"
-                    for temp_file in scanpath(
-                        str(Path(workshop_folder_path) / about_folder_name)
-                    ):
-                        if (
-                            temp_file.name.lower() == preview_file_name.lower()
-                            and temp_file.is_file()
-                        ):
-                            preview_file_name = temp_file.name
-                            invalid_file_path_found = False
-                            break
-                    # If there was an issue getting the expected path, track and exit
-                    if invalid_folder_path_found or invalid_file_path_found:
-                        logger.debug("No preview image found for the mod")
-                        self.preview_picture.setPixmap(
-                            self._placeholder_pixmap(self.missing_image_path)
-                        )
-                    else:
-                        logger.debug("Preview image found")
-                        image_path = str(
-                            Path(workshop_folder_path)
-                            / about_folder_name
-                            / preview_file_name
-                        )
-                        self._show_preview_image(image_path)
-                else:
-                    self.preview_picture.setPixmap(
-                        self._placeholder_pixmap(self.missing_image_path)
-                    )
+            else:
+                self._show_preview_image(str(preview))
 
     def _placeholder_pixmap(self, image_path: str) -> QPixmap:
         """Load a bundled placeholder image once, capped like decoded previews."""

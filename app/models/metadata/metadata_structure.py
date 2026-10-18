@@ -406,20 +406,58 @@ class ListedMod(BaseMod):
         """Return whether the mod is a C# mod based on the contents of the mod path. Looks for binaries in the Assemblies folder."""
         return subfolder_contains_candidate_path(self.mod_path, "Patches", "*.xml")
 
-    @property
+    @functools.cached_property
     def preview_img_path(self) -> Path | None:
-        """Return the path to the preview image for the mod.
+        """Return the path to the preview image for the mod, found case-insensitively.
+
+        Cached property
 
         Returns:
-            Path | None: The path to the preview image for the mod, or None if the path does not exist.
+            Path | None: The preview image path, or None if the mod has none.
         """
         if self.mod_path is None:
             return None
+        return find_preview_image(self.mod_path)
 
-        candidate_path = self.mod_path.joinpath("About/Preview.png")
-        if candidate_path.exists():
-            return candidate_path
+
+_PREVIEW_EXTENSIONS = (".png", ".jpg", ".jpeg")
+
+
+def find_preview_image(mod_path: Path) -> Path | None:
+    """Locate a mod's preview image regardless of filename case.
+
+    RimWorld documents ``About/Preview.png``, but Workshop uploads made on
+    case-insensitive filesystems commonly ship ``preview.png``,
+    ``Preview.PNG`` or ``Preview.jpg``, none of which match on Linux or macOS
+    with a plain path check.
+
+    :param mod_path: The mod's folder.
+    :return: The preview image path, PNG preferred, or None if there is none.
+    """
+    try:
+        with os.scandir(mod_path) as entries:
+            about = next(
+                (e for e in entries if e.name.lower() == "about" and e.is_dir()), None
+            )
+        if about is None:
+            return None
+        candidates: dict[str, Path] = {}
+        with os.scandir(about.path) as entries:
+            for entry in entries:
+                stem, _, ext = entry.name.rpartition(".")
+                ext = f".{ext.lower()}"
+                if (
+                    stem.lower() == "preview"
+                    and ext in _PREVIEW_EXTENSIONS
+                    and entry.is_file()
+                ):
+                    candidates.setdefault(ext, Path(entry.path))
+    except OSError:
         return None
+    for ext in _PREVIEW_EXTENSIONS:
+        if ext in candidates:
+            return candidates[ext]
+    return None
 
 
 @dataclass
