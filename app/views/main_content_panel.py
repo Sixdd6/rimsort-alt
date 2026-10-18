@@ -9,6 +9,7 @@ import webbrowser
 from collections.abc import Callable
 from functools import partial
 from pathlib import Path
+from shutil import rmtree
 from typing import Any, Literal, cast, overload
 
 from loguru import logger
@@ -54,6 +55,7 @@ from app.services.path_autodetect_service import PathAutodetectService
 from app.services.window_manager import WindowManager
 from app.sort.mod_sorting import ModsPanelSortKey
 from app.utils import http
+from app.utils.acf_utils import steamcmd_purge_mods
 from app.utils.app_info import AppInfo
 from app.utils.custom_list_widget_item import CustomListWidgetItem
 from app.utils.db_builder import DatabaseBuilder
@@ -61,6 +63,7 @@ from app.utils.dict_utils import recursively_update_dict
 from app.utils.event_bus import EventBus
 from app.utils.files import create_backup_in_thread
 from app.utils.generic import (
+    attempt_chmod,
     check_internet_connection,
     copy_to_clipboard_safely,
     launch_game_process,
@@ -3374,6 +3377,8 @@ class MainContent(QObject):
                 downloads.append(request.replacement_pfid)
         if swaps:
             self._swap_active_mods(swaps)
+            if self.settings.use_this_instead_delete_replaced:
+                self._delete_replaced_originals(list(swaps))
         if downloads:
             self._do_download_mods_with_steamcmd(downloads)
 
@@ -3395,6 +3400,84 @@ class MainContent(QObject):
                 swaps[original] = path
         if swaps:
             self._swap_active_mods(swaps)
+            if self.settings.use_this_instead_delete_replaced:
+                self._delete_replaced_originals(list(swaps))
+
+    def _delete_replaced_originals(self, paths: list[str]) -> None:
+        """Delete replaced originals from disk and, for Workshop mods, unsubscribe.
+
+        Runs after the swap so the replacement has already taken the original's
+        place. Unsubscribing needs Steam client integration; without it the
+        files are still deleted and the user is told Steam may restore them.
+        SteamCMD originals are purged from its manifest so it does not re-fetch.
+
+        :param paths: Paths of the originals to remove.
+        """
+        deleted: list[str] = []
+        workshop_pfids: list[str] = []
+        steamcmd_pfids: set[str] = set()
+        for path in paths:
+            mod = self.metadata_controller.mods_metadata.get(path)
+            if mod is None or not mod.mod_path:
+                continue
+            try:
+                rmtree(mod.mod_path, ignore_errors=False, onexc=attempt_chmod)
+            except FileNotFoundError:
+                logger.debug(f"Replaced mod already gone from disk: {path}")
+            except OSError as e:
+                logger.error(f"Failed to delete replaced mod at {path}: {e}")
+                dialogue.show_warning(
+                    title=self.tr("Unable to delete replaced mod"),
+                    text=self.tr("{name} could not be deleted.").format(name=mod.name),
+                    information=str(e),
+                )
+                continue
+            deleted.append(path)
+            pfid = mod.published_file_id
+            if pfid and mod.mod_type == ModType.STEAM_WORKSHOP:
+                workshop_pfids.append(str(int(pfid)))
+            elif pfid and mod.mod_type == ModType.STEAM_CMD:
+                steamcmd_pfids.add(pfid)
+        if not deleted:
+            return
+        logger.info(f"Deleted {len(deleted)} replaced mod(s)")
+        self.metadata_controller.delete_mod(*(Path(p) for p in deleted))
+        if steamcmd_pfids:
+            steamcmd_purge_mods(
+                self.metadata_controller,
+                steamcmd_pfids,
+                self.settings.instances[
+                    self.settings.current_instance
+                ].steamcmd_auto_clear_depot_cache,
+            )
+        if workshop_pfids:
+            if self.settings.instances[
+                self.settings.current_instance
+            ].steam_client_integration:
+                self._do_steamworks_api_call_animated(["unsubscribe", workshop_pfids])
+            else:
+                dialogue.show_warning(
+                    title=self.tr("Replaced mods not unsubscribed"),
+                    text=self.tr(
+                        "{count} replaced Workshop mod(s) were deleted but could not be "
+                        "unsubscribed because Steam client integration is off."
+                    ).format(count=len(workshop_pfids)),
+                    information=self.tr(
+                        "Steam will download them again unless you unsubscribe in the "
+                        "Steam client."
+                    ),
+                )
+        # Drop the deleted originals from the inactive list
+        active = [
+            u for u in self.mods_panel.active_mods_list.paths if not is_divider_uuid(u)
+        ]
+        active_set = set(active)
+        inactive = [
+            uuid
+            for uuid in self.metadata_controller.mods_metadata
+            if uuid not in active_set
+        ]
+        self._insert_data_into_lists(active, inactive)
 
     def _swap_active_mods(self, swaps: dict[str, str]) -> None:
         """Replace active originals with their replacement, in place.

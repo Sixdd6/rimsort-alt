@@ -1588,6 +1588,26 @@ Manage mods installed from GitHub releases.</source>
         <translation>Habilite la integración del cliente Steam en Configuración → Steam para usar esta función.</translation>
     </message>
     <message>
+        <source>Unable to delete replaced mod</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>{name} could not be deleted.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Replaced mods not unsubscribed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>{count} replaced Workshop mod(s) were deleted but could not be unsubscribed because Steam client integration is off.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Steam will download them again unless you unsubscribe in the Steam client.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Use This Instead</source>
         <translation>Usa esto en su lugar</translation>
     </message>
@@ -4898,6 +4918,14 @@ Alternative Dependencies:</source>
     <message>
         <source>The number of mod list snapshots to keep. Set to -1 to keep all.</source>
         <translation>El número de instantáneas de la lista de mods que se conservarán.Establezca en -1 para conservar todo.</translation>
+    </message>
+    <message>
+        <source>Delete replaced mods when replacing them</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>When Replace swaps a replacement into your active list, also delete the original mod&apos;s files. Steam Workshop originals are unsubscribed as well (requires Steam client integration) so Steam does not download them again. Off: originals are only deactivated.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>RimWorld Versions Database</source>

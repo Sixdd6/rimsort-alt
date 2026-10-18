@@ -1554,6 +1554,26 @@ Manage mods installed from GitHub releases.</source>
         <translation>Bu özelliği kullanmak için lütfen Ayarlar → Steam&apos;de Steam İstemci Entegrasyonunu etkinleştirin.</translation>
     </message>
     <message>
+        <source>Unable to delete replaced mod</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>{name} could not be deleted.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Replaced mods not unsubscribed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>{count} replaced Workshop mod(s) were deleted but could not be unsubscribed because Steam client integration is off.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Steam will download them again unless you unsubscribe in the Steam client.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Please configure &quot;Use This Instead&quot; database in settings.</source>
         <translation>Lütfen ayarlarda &quot;Bunun Yerine Bunu Kullan&quot; veritabanını yapılandırın.</translation>
     </message>
@@ -4899,6 +4919,14 @@ An alternative updated mod is recommended:
     <message>
         <source>The number of mod list snapshots to keep. Set to -1 to keep all.</source>
         <translation>Saklanacak mod listesi anlık görüntülerinin sayısı.Tümünü korumak için -1&apos;e ayarlayın.</translation>
+    </message>
+    <message>
+        <source>Delete replaced mods when replacing them</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>When Replace swaps a replacement into your active list, also delete the original mod&apos;s files. Steam Workshop originals are unsubscribed as well (requires Steam client integration) so Steam does not download them again. Off: originals are only deactivated.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>RimWorld Versions Database</source>

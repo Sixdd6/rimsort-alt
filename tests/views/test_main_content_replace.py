@@ -1,8 +1,10 @@
+from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
 
+from app.models.metadata.metadata_structure import ModType
 from app.views.main_content_panel import MainContent
 from app.windows.use_this_instead_panel import ReplacementRequest
 
@@ -88,3 +90,68 @@ def test_uninstalled_replacement_is_downloaded_then_swapped_after_refresh(
 
     insert.assert_called_once_with(["/m/a", "/m/new", "/m/r"], ["/m/b", "/m/c"])
     assert mc._pending_replacements == {}
+
+
+def test_delete_setting_removes_originals_after_the_swap(
+    content: tuple[MainContent, Any], monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    mc, insert = content
+    mc.settings.use_this_instead_delete_replaced = True
+    original_dir = tmp_path / "orig"
+    (original_dir / "About").mkdir(parents=True)
+    original = mc.metadata_controller.mods_metadata["/m/b"]
+    original.mod_path = original_dir
+    original.published_file_id = "1372003680"
+    original.mod_type = ModType.STEAM_WORKSHOP
+    original.name = "Replace Stuff"
+    mc.settings.instances[mc.settings.current_instance].steam_client_integration = True
+    steamworks = MagicMock()
+    monkeypatch.setattr(mc, "_do_steamworks_api_call_animated", steamworks)
+
+    mc._apply_replacements([ReplacementRequest(["/m/b"], "9", "/m/r")])
+
+    assert not original_dir.exists()
+    metadata: MagicMock = mc.metadata_controller  # type: ignore[assignment]
+    metadata.delete_mod.assert_called_once_with(Path("/m/b"))
+    steamworks.assert_called_once_with(["unsubscribe", ["1372003680"]])
+    # swap first, then the rebuild without the deleted original
+    assert insert.call_args_list[0].args == (["/m/a", "/m/r", "/m/c"], ["/m/b"])
+    assert insert.call_count == 2
+
+
+def test_delete_setting_off_keeps_originals(
+    content: tuple[MainContent, Any], tmp_path: Path
+) -> None:
+    mc, insert = content
+    mc.settings.use_this_instead_delete_replaced = False
+    original_dir = tmp_path / "orig"
+    original_dir.mkdir()
+    mc.metadata_controller.mods_metadata["/m/b"].mod_path = original_dir
+
+    mc._apply_replacements([ReplacementRequest(["/m/b"], "9", "/m/r")])
+
+    assert original_dir.exists()
+    metadata: MagicMock = mc.metadata_controller  # type: ignore[assignment]
+    metadata.delete_mod.assert_not_called()
+    assert insert.call_count == 1
+
+
+def test_workshop_original_without_steam_integration_warns(
+    content: tuple[MainContent, Any], monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    mc, _insert = content
+    mc.settings.use_this_instead_delete_replaced = True
+    original_dir = tmp_path / "orig"
+    original_dir.mkdir()
+    original = mc.metadata_controller.mods_metadata["/m/b"]
+    original.mod_path = original_dir
+    original.published_file_id = "5"
+    original.mod_type = ModType.STEAM_WORKSHOP
+    mc.settings.instances[mc.settings.current_instance].steam_client_integration = False
+    warn = MagicMock()
+    monkeypatch.setattr("app.views.main_content_panel.dialogue.show_warning", warn)
+
+    mc._delete_replaced_originals(["/m/b"])
+
+    assert not original_dir.exists()
+    warn.assert_called_once()

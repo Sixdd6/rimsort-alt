@@ -256,7 +256,13 @@ class DatabasesTabController(BaseTabController):
     def update_view_from_model(self) -> None:
         for group in self._groups:
             group.update_view(self.dialog, self.settings)
+        self.dialog.use_this_instead_delete_replaced_checkbox.setChecked(
+            self.settings.use_this_instead_delete_replaced
+        )
 
     def update_model_from_view(self) -> None:
         for group in self._groups:
             group.update_model(self.dialog, self.settings)
+        self.settings.use_this_instead_delete_replaced = (
+            self.dialog.use_this_instead_delete_replaced_checkbox.isChecked()
+        )

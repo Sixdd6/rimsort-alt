@@ -1579,6 +1579,26 @@ Manage mods installed from GitHub releases.</source>
         <translation>この機能を使用するには、「設定」→「Steam」で Steam クライアント統合を有効にしてください。</translation>
     </message>
     <message>
+        <source>Unable to delete replaced mod</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>{name} could not be deleted.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Replaced mods not unsubscribed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>{count} replaced Workshop mod(s) were deleted but could not be unsubscribed because Steam client integration is off.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Steam will download them again unless you unsubscribe in the Steam client.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Use This Instead</source>
         <translation>これを代わりに使用</translation>
     </message>
@@ -4900,6 +4920,14 @@ Alternative Dependencies:</source>
     <message>
         <source>The number of mod list snapshots to keep. Set to -1 to keep all.</source>
         <translation>保持する MOD リストのスナップショットの数。すべてを保持するには、-1 に設定します。</translation>
+    </message>
+    <message>
+        <source>Delete replaced mods when replacing them</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>When Replace swaps a replacement into your active list, also delete the original mod&apos;s files. Steam Workshop originals are unsubscribed as well (requires Steam client integration) so Steam does not download them again. Off: originals are only deactivated.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>RimWorld Versions Database</source>

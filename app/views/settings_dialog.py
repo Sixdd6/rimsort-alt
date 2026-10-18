@@ -695,6 +695,18 @@ class SettingsDialog(QDialog):
             self.use_this_instead_db_local_file,
             self.use_this_instead_db_local_file_choose_button,
         ) = self.__create_db_group(section_lbl, none_lbl, tab_layout)
+        self.use_this_instead_delete_replaced_checkbox = QCheckBox(
+            self.tr("Delete replaced mods when replacing them")
+        )
+        self.use_this_instead_delete_replaced_checkbox.setToolTip(
+            self.tr(
+                "When Replace swaps a replacement into your active list, also delete "
+                "the original mod's files. Steam Workshop originals are unsubscribed as "
+                "well (requires Steam client integration) so Steam does not download "
+                "them again. Off: originals are only deactivated."
+            )
+        )
+        tab_layout.addWidget(self.use_this_instead_delete_replaced_checkbox)
 
     def _do_rimworld_versions_db_group(self, tab_layout: QBoxLayout) -> None:
         section_lbl = self.tr("RimWorld Versions Database")

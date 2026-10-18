@@ -90,6 +90,8 @@ class Settings(QObject):
         )
 
         self.external_use_this_instead_metadata_source: str = "Configured URL"
+        # Replace in the Use This Instead panel also deletes the replaced original
+        self.use_this_instead_delete_replaced: bool = False
         self.external_use_this_instead_file_path: str = str(
             AppInfo().databases_folder / "UseThisInstead" / "replacements.json.gz"
         )
