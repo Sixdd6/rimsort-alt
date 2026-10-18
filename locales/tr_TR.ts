@@ -3533,6 +3533,72 @@ An alternative updated mod is recommended:
     </message>
 </context>
 <context>
+    <name>ModTable</name>
+    <message>
+        <source>Mod</source>
+        <translation type="unfinished">Mod</translation>
+    </message>
+    <message>
+        <source>Author</source>
+        <translation type="unfinished">Yazar</translation>
+    </message>
+    <message>
+        <source>Package ID</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Published File Id</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Versions</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Downloaded</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Updated</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Source</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Path</source>
+        <translation type="unfinished">Yol</translation>
+    </message>
+    <message>
+        <source>Workshop</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Status</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Package ID: {package_id}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Published File ID: {pfid}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Path: {path}</source>
+        <translation type="unfinished">Yol:  {path}</translation>
+    </message>
+</context>
+<context>
+    <name>ModTableDelegate</name>
+    <message>
+        <source>Open Page</source>
+        <translation type="unfinished">Sayfayı Aç</translation>
+    </message>
+</context>
+<context>
     <name>ModlistHistoryPanel</name>
     <message>
         <source>Mod List History</source>
@@ -6186,10 +6252,6 @@ Destek için lütfen bize ulaşın: {support_url} {development_guide_url}</trans
         <translation type="unfinished">Seçilen Modları Sil</translation>
     </message>
     <message>
-        <source>Mod</source>
-        <translation type="unfinished">Mod</translation>
-    </message>
-    <message>
         <source>Author</source>
         <translation type="unfinished">Yazar</translation>
     </message>
@@ -6199,34 +6261,6 @@ Destek için lütfen bize ulaşın: {support_url} {development_guide_url}</trans
     </message>
     <message>
         <source>Published File Id</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Versions</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Downloaded</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Updated</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Source</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Path</source>
-        <translation type="unfinished">Yol</translation>
-    </message>
-    <message>
-        <source>Workshop</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Status</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -6278,18 +6312,6 @@ Destek için lütfen bize ulaşın: {support_url} {development_guide_url}</trans
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Package ID: {package_id}</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Published File ID: {pfid}</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Path: {path}</source>
-        <translation type="unfinished">Yol:  {path}</translation>
-    </message>
-    <message>
         <source>Unknown</source>
         <translation type="unfinished"></translation>
     </message>
@@ -6300,13 +6322,6 @@ Destek için lütfen bize ulaşın: {support_url} {development_guide_url}</trans
     <message>
         <source>Active</source>
         <translation type="unfinished">Etkin</translation>
-    </message>
-</context>
-<context>
-    <name>UpdateLogDelegate</name>
-    <message>
-        <source>Open Page</source>
-        <translation type="unfinished">Sayfayı Aç</translation>
     </message>
 </context>
 <context>
@@ -6367,18 +6382,6 @@ Destek için lütfen bize ulaşın: {support_url} {development_guide_url}</trans
         <translation>Rimsort - Çalıştay modları için bulunan yedekler</translation>
     </message>
     <message>
-        <source>There are replacements available for Workshop mods!</source>
-        <translation>Atölye modları için yedekler mevcuttur!</translation>
-    </message>
-    <message>
-        <source>The following table displays Workshop mods with suggested replacements according to the &quot;Use This Instead&quot; database, grouped by replacement mod.</source>
-        <translation>Aşağıdaki tabloda, değiştirme moduna göre gruplandırılmış &quot;Bunun Yerine Bunu Kullan&quot; veritabanına göre önerilen değiştirmelerle birlikte Atölye modları gösterilmektedir.</translation>
-    </message>
-    <message>
-        <source>Do nothing and exit</source>
-        <translation>Hiçbir şey yapmayın ve çıkın</translation>
-    </message>
-    <message>
         <source>Select</source>
         <translation>Seçme</translation>
     </message>
@@ -6395,24 +6398,48 @@ Destek için lütfen bize ulaşın: {support_url} {development_guide_url}</trans
         <translation>Seçilen Modları Sil</translation>
     </message>
     <message>
+        <source>Replacements are available for some of your mods</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Each group shows an original mod and the replacement the &quot;Use This Instead&quot; database recommends. Replace swaps the replacement into your active list where the original was, downloading it first if needed; originals are only deactivated, never deleted.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Replace</source>
+        <translation type="unfinished">Yer değiştirmek</translation>
+    </message>
+    <message>
+        <source>Replace selected groups</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Replace all groups</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>{name} by {author}  ·  replaces {count}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Installed</source>
         <translation>Yüklendi</translation>
     </message>
     <message>
-        <source>Not Installed</source>
-        <translation>Kurulu Değil</translation>
+        <source>Replacement</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Group {0}</source>
-        <translation>Grup {0}</translation>
+        <source>Workshop</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Original</source>
         <translation>Orijinal</translation>
-    </message>
-    <message>
-        <source>Replacement [{0}]</source>
-        <translation>Değiştirme [{0}]</translation>
     </message>
 </context>
 <context>

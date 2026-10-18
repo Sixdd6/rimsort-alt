@@ -3542,6 +3542,72 @@ Um mod alternativo atualizado é recomendado:
     </message>
 </context>
 <context>
+    <name>ModTable</name>
+    <message>
+        <source>Mod</source>
+        <translation type="unfinished">Mod</translation>
+    </message>
+    <message>
+        <source>Author</source>
+        <translation type="unfinished">Autor</translation>
+    </message>
+    <message>
+        <source>Package ID</source>
+        <translation type="unfinished">ID do pacote</translation>
+    </message>
+    <message>
+        <source>Published File Id</source>
+        <translation type="unfinished">ID do arquivo publicado</translation>
+    </message>
+    <message>
+        <source>Versions</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Downloaded</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Updated</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Source</source>
+        <translation type="unfinished">Origem</translation>
+    </message>
+    <message>
+        <source>Path</source>
+        <translation type="unfinished">Caminho</translation>
+    </message>
+    <message>
+        <source>Workshop</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Status</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Package ID: {package_id}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Published File ID: {pfid}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Path: {path}</source>
+        <translation type="unfinished">Caminho: {path}</translation>
+    </message>
+</context>
+<context>
+    <name>ModTableDelegate</name>
+    <message>
+        <source>Open Page</source>
+        <translation type="unfinished">Abrir página</translation>
+    </message>
+</context>
+<context>
     <name>ModlistHistoryPanel</name>
     <message>
         <source>Mod List History</source>
@@ -6195,10 +6261,6 @@ Para obter suporte, acesse: {support_url}</translation>
         <translation type="unfinished">Excluir mods selecionados</translation>
     </message>
     <message>
-        <source>Mod</source>
-        <translation type="unfinished">Mod</translation>
-    </message>
-    <message>
         <source>Author</source>
         <translation type="unfinished">Autor</translation>
     </message>
@@ -6209,34 +6271,6 @@ Para obter suporte, acesse: {support_url}</translation>
     <message>
         <source>Published File Id</source>
         <translation type="unfinished">ID do arquivo publicado</translation>
-    </message>
-    <message>
-        <source>Versions</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Downloaded</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Updated</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Source</source>
-        <translation type="unfinished">Origem</translation>
-    </message>
-    <message>
-        <source>Path</source>
-        <translation type="unfinished">Caminho</translation>
-    </message>
-    <message>
-        <source>Workshop</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Status</source>
-        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Import ACF Data</source>
@@ -6287,18 +6321,6 @@ Para obter suporte, acesse: {support_url}</translation>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Package ID: {package_id}</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Published File ID: {pfid}</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Path: {path}</source>
-        <translation type="unfinished">Caminho: {path}</translation>
-    </message>
-    <message>
         <source>Unknown</source>
         <translation type="unfinished"></translation>
     </message>
@@ -6309,13 +6331,6 @@ Para obter suporte, acesse: {support_url}</translation>
     <message>
         <source>Active</source>
         <translation type="unfinished">Ativo</translation>
-    </message>
-</context>
-<context>
-    <name>UpdateLogDelegate</name>
-    <message>
-        <source>Open Page</source>
-        <translation type="unfinished">Abrir página</translation>
     </message>
 </context>
 <context>
@@ -6376,18 +6391,6 @@ Para obter suporte, acesse: {support_url}</translation>
         <translation>RimSort - Substituições encontradas para mods do Workshop</translation>
     </message>
     <message>
-        <source>There are replacements available for Workshop mods!</source>
-        <translation>Foram encontradas substituições para mods do Workshop!</translation>
-    </message>
-    <message>
-        <source>The following table displays Workshop mods with suggested replacements according to the &quot;Use This Instead&quot; database, grouped by replacement mod.</source>
-        <translation>A tabela abaixo mostra mods do Workshop com substituições sugeridas pelo banco de dados &quot;Usar isto em vez disso&quot;, agrupados pelo mod substituto.</translation>
-    </message>
-    <message>
-        <source>Do nothing and exit</source>
-        <translation>Não faça nada e saia</translation>
-    </message>
-    <message>
         <source>Select</source>
         <translation>Selecione</translation>
     </message>
@@ -6404,24 +6407,48 @@ Para obter suporte, acesse: {support_url}</translation>
         <translation>Excluir mods selecionados</translation>
     </message>
     <message>
+        <source>Replacements are available for some of your mods</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Each group shows an original mod and the replacement the &quot;Use This Instead&quot; database recommends. Replace swaps the replacement into your active list where the original was, downloading it first if needed; originals are only deactivated, never deleted.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation type="unfinished">Fechar</translation>
+    </message>
+    <message>
+        <source>Replace</source>
+        <translation type="unfinished">Substituir</translation>
+    </message>
+    <message>
+        <source>Replace selected groups</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Replace all groups</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>{name} by {author}  ·  replaces {count}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Installed</source>
         <translation>Instalado</translation>
     </message>
     <message>
-        <source>Not Installed</source>
-        <translation>Não instalado</translation>
+        <source>Replacement</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Group {0}</source>
-        <translation>Grupo {0}</translation>
+        <source>Workshop</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Original</source>
         <translation>Original</translation>
-    </message>
-    <message>
-        <source>Replacement [{0}]</source>
-        <translation>Substituição [{0}]</translation>
     </message>
 </context>
 <context>

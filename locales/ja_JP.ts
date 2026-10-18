@@ -3535,6 +3535,72 @@ Alternative Dependencies:</source>
     </message>
 </context>
 <context>
+    <name>ModTable</name>
+    <message>
+        <source>Mod</source>
+        <translation type="unfinished">モジュール</translation>
+    </message>
+    <message>
+        <source>Author</source>
+        <translation type="unfinished">作者</translation>
+    </message>
+    <message>
+        <source>Package ID</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Published File Id</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Versions</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Downloaded</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Updated</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Source</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Path</source>
+        <translation type="unfinished">パス</translation>
+    </message>
+    <message>
+        <source>Workshop</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Status</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Package ID: {package_id}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Published File ID: {pfid}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Path: {path}</source>
+        <translation type="unfinished">パス: {path}</translation>
+    </message>
+</context>
+<context>
+    <name>ModTableDelegate</name>
+    <message>
+        <source>Open Page</source>
+        <translation type="unfinished">ページを開く</translation>
+    </message>
+</context>
+<context>
     <name>ModlistHistoryPanel</name>
     <message>
         <source>Mod List History</source>
@@ -6186,10 +6252,6 @@ Please reach out to us for support at: {support_url}</source>
         <translation type="unfinished">選択したMODを削除</translation>
     </message>
     <message>
-        <source>Mod</source>
-        <translation type="unfinished">モジュール</translation>
-    </message>
-    <message>
         <source>Author</source>
         <translation type="unfinished">作者</translation>
     </message>
@@ -6199,34 +6261,6 @@ Please reach out to us for support at: {support_url}</source>
     </message>
     <message>
         <source>Published File Id</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Versions</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Downloaded</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Updated</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Source</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Path</source>
-        <translation type="unfinished">パス</translation>
-    </message>
-    <message>
-        <source>Workshop</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Status</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -6278,18 +6312,6 @@ Please reach out to us for support at: {support_url}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Package ID: {package_id}</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Published File ID: {pfid}</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Path: {path}</source>
-        <translation type="unfinished">パス: {path}</translation>
-    </message>
-    <message>
         <source>Unknown</source>
         <translation type="unfinished"></translation>
     </message>
@@ -6300,13 +6322,6 @@ Please reach out to us for support at: {support_url}</source>
     <message>
         <source>Active</source>
         <translation type="unfinished">アクティブ</translation>
-    </message>
-</context>
-<context>
-    <name>UpdateLogDelegate</name>
-    <message>
-        <source>Open Page</source>
-        <translation type="unfinished">ページを開く</translation>
     </message>
 </context>
 <context>
@@ -6367,18 +6382,6 @@ Please reach out to us for support at: {support_url}</source>
         <translation>RimSort - ワークショップMODの置き換えが見つかりました</translation>
     </message>
     <message>
-        <source>There are replacements available for Workshop mods!</source>
-        <translation>ワークショップMODの置き換えが利用可能です！</translation>
-    </message>
-    <message>
-        <source>The following table displays Workshop mods with suggested replacements according to the &quot;Use This Instead&quot; database, grouped by replacement mod.</source>
-        <translation>次の表は、「代わりにこれを使用する」データベースに基づいて推奨される代替品を含むワークショップ MOD を、代替 MOD ごとにグループ化して表示します。</translation>
-    </message>
-    <message>
-        <source>Do nothing and exit</source>
-        <translation>何もせず終了します</translation>
-    </message>
-    <message>
         <source>Select</source>
         <translation>選択</translation>
     </message>
@@ -6395,24 +6398,48 @@ Please reach out to us for support at: {support_url}</source>
         <translation>選択したMODを削除</translation>
     </message>
     <message>
+        <source>Replacements are available for some of your mods</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Each group shows an original mod and the replacement the &quot;Use This Instead&quot; database recommends. Replace swaps the replacement into your active list where the original was, downloading it first if needed; originals are only deactivated, never deleted.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Replace</source>
+        <translation type="unfinished">交換する</translation>
+    </message>
+    <message>
+        <source>Replace selected groups</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Replace all groups</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>{name} by {author}  ·  replaces {count}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Installed</source>
         <translation>インストール済み</translation>
     </message>
     <message>
-        <source>Not Installed</source>
-        <translation>インストールされていません</translation>
+        <source>Replacement</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Group {0}</source>
-        <translation>グループ{0}</translation>
+        <source>Workshop</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Original</source>
         <translation>オリジナル</translation>
-    </message>
-    <message>
-        <source>Replacement [{0}]</source>
-        <translation>置換 [{0}]</translation>
     </message>
 </context>
 <context>

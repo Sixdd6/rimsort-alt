@@ -3538,6 +3538,72 @@ Alternative Dependencies:</source>
     </message>
 </context>
 <context>
+    <name>ModTable</name>
+    <message>
+        <source>Mod</source>
+        <translation type="unfinished">模组</translation>
+    </message>
+    <message>
+        <source>Author</source>
+        <translation type="unfinished">作者</translation>
+    </message>
+    <message>
+        <source>Package ID</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Published File Id</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Versions</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Downloaded</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Updated</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Source</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Path</source>
+        <translation type="unfinished">路径</translation>
+    </message>
+    <message>
+        <source>Workshop</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Status</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Package ID: {package_id}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Published File ID: {pfid}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Path: {path}</source>
+        <translation type="unfinished">路径：{path}</translation>
+    </message>
+</context>
+<context>
+    <name>ModTableDelegate</name>
+    <message>
+        <source>Open Page</source>
+        <translation type="unfinished">打开页面</translation>
+    </message>
+</context>
+<context>
     <name>ModlistHistoryPanel</name>
     <message>
         <source>Mod List History</source>
@@ -6191,10 +6257,6 @@ Please reach out to us for support at: {support_url}</source>
         <translation type="unfinished">删除选定的模组</translation>
     </message>
     <message>
-        <source>Mod</source>
-        <translation type="unfinished">模组</translation>
-    </message>
-    <message>
         <source>Author</source>
         <translation type="unfinished">作者</translation>
     </message>
@@ -6204,34 +6266,6 @@ Please reach out to us for support at: {support_url}</source>
     </message>
     <message>
         <source>Published File Id</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Versions</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Downloaded</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Updated</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Source</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Path</source>
-        <translation type="unfinished">路径</translation>
-    </message>
-    <message>
-        <source>Workshop</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Status</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -6283,18 +6317,6 @@ Please reach out to us for support at: {support_url}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Package ID: {package_id}</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Published File ID: {pfid}</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Path: {path}</source>
-        <translation type="unfinished">路径：{path}</translation>
-    </message>
-    <message>
         <source>Unknown</source>
         <translation type="unfinished"></translation>
     </message>
@@ -6305,13 +6327,6 @@ Please reach out to us for support at: {support_url}</source>
     <message>
         <source>Active</source>
         <translation type="unfinished">启用</translation>
-    </message>
-</context>
-<context>
-    <name>UpdateLogDelegate</name>
-    <message>
-        <source>Open Page</source>
-        <translation type="unfinished">打开页面</translation>
     </message>
 </context>
 <context>
@@ -6372,18 +6387,6 @@ Please reach out to us for support at: {support_url}</source>
         <translation>RimSort - 已找到创意工坊模组的替代项</translation>
     </message>
     <message>
-        <source>There are replacements available for Workshop mods!</source>
-        <translation>已有可替代的模组可用于创意工坊模组！</translation>
-    </message>
-    <message>
-        <source>The following table displays Workshop mods with suggested replacements according to the &quot;Use This Instead&quot; database, grouped by replacement mod.</source>
-        <translation>下表显示了根据“使用此替代”数据库提供的建议替换的创意工坊模组，并按替换模组分组。</translation>
-    </message>
-    <message>
-        <source>Do nothing and exit</source>
-        <translation>不执行任何操作并退出</translation>
-    </message>
-    <message>
         <source>Select</source>
         <translation>选择</translation>
     </message>
@@ -6400,24 +6403,48 @@ Please reach out to us for support at: {support_url}</source>
         <translation>删除选定的模组</translation>
     </message>
     <message>
+        <source>Replacements are available for some of your mods</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Each group shows an original mod and the replacement the &quot;Use This Instead&quot; database recommends. Replace swaps the replacement into your active list where the original was, downloading it first if needed; originals are only deactivated, never deleted.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation type="unfinished">关闭</translation>
+    </message>
+    <message>
+        <source>Replace</source>
+        <translation type="unfinished">代替</translation>
+    </message>
+    <message>
+        <source>Replace selected groups</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Replace all groups</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>{name} by {author}  ·  replaces {count}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Installed</source>
         <translation>已安装</translation>
     </message>
     <message>
-        <source>Not Installed</source>
-        <translation>未安装</translation>
+        <source>Replacement</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Group {0}</source>
-        <translation>分组 {0}</translation>
+        <source>Workshop</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Original</source>
         <translation>原始</translation>
-    </message>
-    <message>
-        <source>Replacement [{0}]</source>
-        <translation>替换 [{0}]</translation>
     </message>
 </context>
 <context>

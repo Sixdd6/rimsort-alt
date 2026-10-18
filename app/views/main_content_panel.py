@@ -111,7 +111,10 @@ from app.windows.missing_mods_panel import MissingModsPrompt
 from app.windows.modlist_history_panel import ModlistHistoryPanel
 from app.windows.rule_editor_panel import RuleEditor
 from app.windows.runner_panel import RunnerPanel
-from app.windows.use_this_instead_panel import UseThisInsteadPanel
+from app.windows.use_this_instead_panel import (
+    ReplacementRequest,
+    UseThisInsteadPanel,
+)
 from app.windows.workshop_mod_updater_panel import WorkshopModUpdaterPanel
 
 
@@ -163,6 +166,8 @@ class MainContent(QObject):
         self._pending_downloader_snapshot: dict[str, str] = {}
         self._workshop_restore_target: QWidget | None = None
         self.steamcmd_runner: RunnerPanel | None = None
+        # Replacement PFID -> original mod paths to swap out once it is installed
+        self._pending_replacements: dict[str, list[str]] = {}
         self.steamcmd_wrapper = SteamcmdInterface.instance()
         self._import_export_service = ImportExportService(
             self.metadata_controller, self.settings
@@ -872,6 +877,7 @@ class MainContent(QObject):
             self.inactive_mods_uuids_restore_state = inactive_mods_uuids
 
         self._insert_data_into_lists(active_mods_uuids, inactive_mods_uuids)
+        self._apply_pending_replacements()
 
     def _do_check_for_update(self) -> None:
         """
@@ -3348,6 +3354,80 @@ class MainContent(QObject):
             launch_game_process(game_install_path=game_install_path, run_args=run_args)
 
     @Slot()
+    def _apply_replacements(self, requests: list[ReplacementRequest]) -> None:
+        """Swap installed replacements into the active list; download the rest.
+
+        Originals are deactivated, never deleted. Replacements that are not
+        installed are downloaded with SteamCMD and swapped in by
+        ``_apply_pending_replacements`` once metadata has been refreshed.
+        """
+        swaps: dict[str, str] = {}
+        downloads: list[str] = []
+        for request in requests:
+            if request.replacement_path:
+                for original in request.original_paths:
+                    swaps[original] = request.replacement_path
+            else:
+                self._pending_replacements.setdefault(
+                    request.replacement_pfid, []
+                ).extend(request.original_paths)
+                downloads.append(request.replacement_pfid)
+        if swaps:
+            self._swap_active_mods(swaps)
+        if downloads:
+            self._do_download_mods_with_steamcmd(downloads)
+
+    def _apply_pending_replacements(self) -> None:
+        """Finish replacements whose download has since landed."""
+        if not self._pending_replacements:
+            return
+        path_by_pfid = {
+            mod.published_file_id: path
+            for path, mod in self.metadata_controller.mods_metadata.items()
+            if mod.published_file_id
+        }
+        swaps: dict[str, str] = {}
+        for pfid in list(self._pending_replacements):
+            path = path_by_pfid.get(pfid)
+            if path is None:
+                continue
+            for original in self._pending_replacements.pop(pfid):
+                swaps[original] = path
+        if swaps:
+            self._swap_active_mods(swaps)
+
+    def _swap_active_mods(self, swaps: dict[str, str]) -> None:
+        """Replace active originals with their replacement, in place.
+
+        Each replacement takes the position of the first original it replaces;
+        further originals are simply deactivated. Inactive originals are left
+        alone. Nothing is deleted.
+
+        :param swaps: Original mod path -> replacement mod path.
+        """
+        active = [
+            u for u in self.mods_panel.active_mods_list.paths if not is_divider_uuid(u)
+        ]
+        placed = {u for u in active if u not in swaps}
+        new_active: list[str] = []
+        for uuid in active:
+            replacement = swaps.get(uuid)
+            if replacement is None:
+                new_active.append(uuid)
+            elif replacement not in placed:
+                new_active.append(replacement)
+                placed.add(replacement)
+        if new_active == active:
+            return
+        active_set = set(new_active)
+        inactive = [
+            uuid
+            for uuid in self.metadata_controller.mods_metadata
+            if uuid not in active_set
+        ]
+        logger.info(f"Replacing {len(active) - len(new_active) + 1} active mod(s)")
+        self._insert_data_into_lists(new_active, inactive)
+
     def _use_this_instead_clicked(self) -> None:
         """
         When clicked, opens the Use This Instead panel.
@@ -3364,7 +3444,9 @@ class MainContent(QObject):
         self.use_this_instead_dialog = UseThisInsteadPanel(
             mod_metadata=self.metadata_controller.mods_metadata,
             metadata_controller=self.metadata_controller,
+            active_mod_paths=self.mods_panel.active_mods_list.paths,
         )
+        self.use_this_instead_dialog.replace_requested.connect(self._apply_replacements)
         self.window_manager.register_attr(self, "use_this_instead_dialog")
         if not self.use_this_instead_dialog.show_if_has_alternatives():
             dialogue.show_information(

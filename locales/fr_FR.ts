@@ -3531,6 +3531,72 @@ Alternative Dependencies:</source>
     </message>
 </context>
 <context>
+    <name>ModTable</name>
+    <message>
+        <source>Mod</source>
+        <translation type="unfinished">Mod</translation>
+    </message>
+    <message>
+        <source>Author</source>
+        <translation type="unfinished">Auteur</translation>
+    </message>
+    <message>
+        <source>Package ID</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Published File Id</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Versions</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Downloaded</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Updated</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Source</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Path</source>
+        <translation type="unfinished">Chemin</translation>
+    </message>
+    <message>
+        <source>Workshop</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Status</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Package ID: {package_id}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Published File ID: {pfid}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Path: {path}</source>
+        <translation type="unfinished">Chemin:  {path}</translation>
+    </message>
+</context>
+<context>
+    <name>ModTableDelegate</name>
+    <message>
+        <source>Open Page</source>
+        <translation type="unfinished">Ouvrir la page</translation>
+    </message>
+</context>
+<context>
     <name>ModlistHistoryPanel</name>
     <message>
         <source>Mod List History</source>
@@ -6183,10 +6249,6 @@ Veuillez nous contacter pour l&apos;assistance à: {support_url} {development_gu
         <translation type="unfinished">Supprimer les modules sélectionnés</translation>
     </message>
     <message>
-        <source>Mod</source>
-        <translation type="unfinished">Mod</translation>
-    </message>
-    <message>
         <source>Author</source>
         <translation type="unfinished">Auteur</translation>
     </message>
@@ -6196,34 +6258,6 @@ Veuillez nous contacter pour l&apos;assistance à: {support_url} {development_gu
     </message>
     <message>
         <source>Published File Id</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Versions</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Downloaded</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Updated</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Source</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Path</source>
-        <translation type="unfinished">Chemin</translation>
-    </message>
-    <message>
-        <source>Workshop</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Status</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -6275,18 +6309,6 @@ Veuillez nous contacter pour l&apos;assistance à: {support_url} {development_gu
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Package ID: {package_id}</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Published File ID: {pfid}</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Path: {path}</source>
-        <translation type="unfinished">Chemin:  {path}</translation>
-    </message>
-    <message>
         <source>Unknown</source>
         <translation type="unfinished"></translation>
     </message>
@@ -6297,13 +6319,6 @@ Veuillez nous contacter pour l&apos;assistance à: {support_url} {development_gu
     <message>
         <source>Active</source>
         <translation type="unfinished">Actif</translation>
-    </message>
-</context>
-<context>
-    <name>UpdateLogDelegate</name>
-    <message>
-        <source>Open Page</source>
-        <translation type="unfinished">Ouvrir la page</translation>
     </message>
 </context>
 <context>
@@ -6364,18 +6379,6 @@ Veuillez nous contacter pour l&apos;assistance à: {support_url} {development_gu
         <translation>Rimsort - remplacements trouvés pour les mods d&apos;atelier</translation>
     </message>
     <message>
-        <source>There are replacements available for Workshop mods!</source>
-        <translation>Il y a des remplacements disponibles pour les mods d&apos;atelier!</translation>
-    </message>
-    <message>
-        <source>The following table displays Workshop mods with suggested replacements according to the &quot;Use This Instead&quot; database, grouped by replacement mod.</source>
-        <translation>Le tableau suivant affiche les mods de l&apos;atelier avec les remplacements suggérés selon la base de données « Utiliser ceci à la place », regroupés par mod de remplacement.</translation>
-    </message>
-    <message>
-        <source>Do nothing and exit</source>
-        <translation>Ne rien faire et sortir</translation>
-    </message>
-    <message>
         <source>Select</source>
         <translation>Sélectionner</translation>
     </message>
@@ -6392,24 +6395,48 @@ Veuillez nous contacter pour l&apos;assistance à: {support_url} {development_gu
         <translation>Supprimer les modules sélectionnés</translation>
     </message>
     <message>
+        <source>Replacements are available for some of your mods</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Each group shows an original mod and the replacement the &quot;Use This Instead&quot; database recommends. Replace swaps the replacement into your active list where the original was, downloading it first if needed; originals are only deactivated, never deleted.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation type="unfinished">Fermer</translation>
+    </message>
+    <message>
+        <source>Replace</source>
+        <translation type="unfinished">Remplacer</translation>
+    </message>
+    <message>
+        <source>Replace selected groups</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Replace all groups</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>{name} by {author}  ·  replaces {count}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Installed</source>
         <translation>Installé</translation>
     </message>
     <message>
-        <source>Not Installed</source>
-        <translation>Non installé</translation>
+        <source>Replacement</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Group {0}</source>
-        <translation>Groupe&#xa0;{0}</translation>
+        <source>Workshop</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Original</source>
         <translation>Original</translation>
-    </message>
-    <message>
-        <source>Replacement [{0}]</source>
-        <translation>Remplacement [{0}]</translation>
     </message>
 </context>
 <context>
