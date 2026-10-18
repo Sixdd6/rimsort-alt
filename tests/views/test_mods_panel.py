@@ -3,7 +3,7 @@ from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QModelIndex, Qt
 from PySide6.QtWidgets import QListWidget, QListWidgetItem
 
 from app.models.metadata.metadata_structure import (
@@ -58,6 +58,22 @@ def _make_active_mod_list(
         widget.addItem(item)
 
     return widget
+
+
+def _alpha_beta_mods() -> tuple[AboutXmlMod, AboutXmlMod]:
+    """Two mods, Alpha (mod.a) and Beta (mod.b), at /mods/a and /mods/b."""
+    return (
+        AboutXmlMod(
+            name="Alpha",
+            _mod_path=Path("/mods/a"),
+            package_id=CaseInsensitiveStr("mod.a"),
+        ),
+        AboutXmlMod(
+            name="Beta",
+            _mod_path=Path("/mods/b"),
+            package_id=CaseInsensitiveStr("mod.b"),
+        ),
+    )
 
 
 class TestTagEditDialog:
@@ -245,16 +261,7 @@ def test_load_order_warning_header_matches_rule_direction(
     expected_header: str,
     unexpected_header: str,
 ) -> None:
-    mod_a = AboutXmlMod(
-        name="Alpha",
-        _mod_path=Path("/mods/a"),
-        package_id=CaseInsensitiveStr("mod.a"),
-    )
-    mod_b = AboutXmlMod(
-        name="Beta",
-        _mod_path=Path("/mods/b"),
-        package_id=CaseInsensitiveStr("mod.b"),
-    )
+    mod_a, mod_b = _alpha_beta_mods()
     setattr(mod_a.about_rules, rule_name, CaseInsensitiveSet(["mod.b"]))
     widget = _make_active_mod_list(
         qtbot,
@@ -270,6 +277,35 @@ def test_load_order_warning_header_matches_rule_direction(
     assert expected_header in warning
     assert "* Beta" in warning
     assert unexpected_header not in warning
+
+
+def test_load_order_in_rule_direction_has_no_warning(qtbot: Any) -> None:
+    mod_a, mod_b = _alpha_beta_mods()
+    mod_a.about_rules.load_before = CaseInsensitiveSet(["mod.b"])
+    widget = _make_active_mod_list(
+        qtbot, {"/mods/a": mod_a, "/mods/b": mod_b}, ["/mods/a", "/mods/b"]
+    )
+
+    widget.recalculate_internal_errors_warnings()
+
+    item = widget.item(0)
+    assert item is not None
+    assert item.data(Qt.ItemDataRole.UserRole).warnings == ""
+
+
+def test_row_changes_emit_one_list_update(qtbot: Any) -> None:
+    widget = _make_active_mod_list(qtbot, {}, [])
+    emitted: list[str] = []
+    widget.list_update_signal.connect(emitted.append)
+
+    for _ in range(5):
+        widget.handle_rows_removed(QModelIndex(), 0, 0)
+        widget.handle_rows_inserted(QModelIndex(), 0, -1)
+
+    assert emitted == []
+    qtbot.waitUntil(lambda: emitted == ["0"])
+    qtbot.wait(20)
+    assert emitted == ["0"]
 
 
 class TestStartupImpactLabel:

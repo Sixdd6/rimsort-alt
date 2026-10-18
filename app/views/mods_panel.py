@@ -1179,6 +1179,9 @@ class ModListWidget(QListWidget):
     update_git_mods_signal = Signal(list)
     steamdb_blacklist_signal = Signal(list)
 
+    # Set while a coalesced list_update_signal emission is scheduled
+    _list_update_pending: bool = False
+
     def __init__(
         self,
         list_type: str,
@@ -3095,9 +3098,27 @@ class ModListWidget(QListWidget):
         if len(self.paths) == self.count():
             # Update list with the number of items
             logger.debug(
-                f"Emitting {self.list_type} list update signal after rows inserted [{self.count()}]"
+                f"Scheduling {self.list_type} list update signal after rows inserted [{self.count()}]"
             )
-            self.list_update_signal.emit(str(self.count()))
+            self._schedule_list_update()
+
+    def _schedule_list_update(self) -> None:
+        """
+        Emit list_update_signal once after the current batch of row changes.
+
+        Moving several mods inserts and removes them one row at a time, and
+        each row change would otherwise recalculate the whole list's errors
+        and warnings. The emission waits for the event loop, so all row
+        handlers already queued for the batch run first.
+        """
+        if self._list_update_pending:
+            return
+        self._list_update_pending = True
+        QTimer.singleShot(0, self, self._emit_scheduled_list_update)
+
+    def _emit_scheduled_list_update(self) -> None:
+        self._list_update_pending = False
+        self.list_update_signal.emit(str(self.count()))
 
     def handle_rows_removed(self, parent: QModelIndex, first: int, last: int) -> None:
         """
@@ -3120,9 +3141,9 @@ class ModListWidget(QListWidget):
         if len(self.paths) == self.count():
             # Update list with the number of items
             logger.debug(
-                f"Emitting {self.list_type} list update signal after rows removed [{self.count()}]"
+                f"Scheduling {self.list_type} list update signal after rows removed [{self.count()}]"
             )
-            self.list_update_signal.emit(str(self.count()))
+            self._schedule_list_update()
 
     def get_item_widget_at_index(self, idx: int) -> QWidget | None:
         item = self.item(idx)
@@ -3427,8 +3448,12 @@ class ModListWidget(QListWidget):
         mod_data: ListedMod,
         packageid_to_path: dict[str, str],
         current_mod_index: int,
+        path_index: dict[str, int],
     ) -> tuple[set[str], set[str]]:
-        """Check for load order violations."""
+        """Check for load order violations.
+
+        :param path_index: Position of each path in ``self.paths``.
+        """
         load_before_violations: set[str] = set()
         load_after_violations: set[str] = set()
         if not isinstance(mod_data, AboutXmlMod):
@@ -3438,20 +3463,16 @@ class ModListWidget(QListWidget):
         for pid in mod_data.overall_rules.load_before:
             pid_str = str(pid)
             if pid_str in packageid_to_path:
-                other_path = packageid_to_path[pid_str]
-                if other_path in self.paths and current_mod_index >= self.paths.index(
-                    other_path
-                ):
+                other_index = path_index.get(packageid_to_path[pid_str])
+                if other_index is not None and current_mod_index >= other_index:
                     load_before_violations.add(pid_str)
         # load_after: this mod should load AFTER the listed mods
         # violation: this mod's index <= the other mod's index
         for pid in mod_data.overall_rules.load_after:
             pid_str = str(pid)
             if pid_str in packageid_to_path:
-                other_path = packageid_to_path[pid_str]
-                if other_path in self.paths and current_mod_index <= self.paths.index(
-                    other_path
-                ):
+                other_index = path_index.get(packageid_to_path[pid_str])
+                if other_index is not None and current_mod_index <= other_index:
                     load_after_violations.add(pid_str)
         return load_before_violations, load_after_violations
 
@@ -3474,6 +3495,10 @@ class ModListWidget(QListWidget):
         all_mods_metadata = self.metadata_controller.mods_metadata
 
         mod_uuids = [u for u in self.paths if not is_divider_uuid(u)]
+        # First position of each path, matching list.index()
+        path_index: dict[str, int] = {}
+        for index, path in enumerate(self.paths):
+            path_index.setdefault(path, index)
         packageid_to_uuid: dict[str, str] = {}
         for uuid in mod_uuids:
             mod = all_mods_metadata.get(uuid)
@@ -3535,8 +3560,34 @@ class ModListWidget(QListWidget):
             except KeyError, AttributeError:
                 startup_impact_report = None
 
+        # Build the translated tooltip headers once for the whole list
+        tooltip_sections = [
+            ("missing_dependencies", self.tr("\nMissing Dependencies:")),
+            ("conflicting_incompatibilities", self.tr("\nIncompatibilities:")),
+            (
+                "reverse_incompatibilities",
+                self.tr("\nIncompatible (per other mod's rules):"),
+            ),
+        ]
+        if self.metadata_controller.settings.use_alternative_package_ids_as_satisfying_dependencies:
+            tooltip_sections.insert(
+                1,
+                (
+                    "alternative_dependencies",
+                    self.tr("\nAlternative Dependencies:"),
+                ),
+            )
+        warning_sections = [
+            ("load_before_violations", self.tr("\nShould be Loaded Before:")),
+            ("load_after_violations", self.tr("\nShould be Loaded After:")),
+        ]
+        version_mismatch_text = self.tr("\nMod and Game Version Mismatch")
+        alternative_text = self.tr(
+            "\nAn alternative updated mod is recommended:\n{alternative}"
+        )
+
         for uuid, mod_errors in package_id_to_errors.items():
-            current_mod_index = self.paths.index(uuid)
+            current_mod_index = path_index[uuid]
             current_item = self.item(current_mod_index)
             if current_item is None:
                 continue
@@ -3643,28 +3694,10 @@ class ModListWidget(QListWidget):
                     mod_errors["load_before_violations"],
                     mod_errors["load_after_violations"],
                 ) = self._check_load_order_violations(
-                    mod_data, packageid_to_uuid, current_mod_index
+                    mod_data, packageid_to_uuid, current_mod_index, path_index
                 )
             # Calculate any needed string for errors
             tool_tip_text = ""
-            # Build tooltip sections, conditionally include alternatives
-            tooltip_sections = [
-                ("missing_dependencies", self.tr("\nMissing Dependencies:")),
-                ("conflicting_incompatibilities", self.tr("\nIncompatibilities:")),
-                (
-                    "reverse_incompatibilities",
-                    self.tr("\nIncompatible (per other mod's rules):"),
-                ),
-            ]
-            if self.metadata_controller.settings.use_alternative_package_ids_as_satisfying_dependencies:
-                tooltip_sections.insert(
-                    1,
-                    (
-                        "alternative_dependencies",
-                        self.tr("\nAlternative Dependencies:"),
-                    ),
-                )
-
             for error_type, tooltip_header in tooltip_sections:
                 if mod_errors[error_type]:
                     tool_tip_text += tooltip_header
@@ -3690,10 +3723,7 @@ class ModListWidget(QListWidget):
             # If missing dependency and/or incompatibility, add tooltip to errors
             current_item_data["errors"] = tool_tip_text
             # Calculate any needed string for warnings
-            for error_type, tooltip_header in [
-                ("load_before_violations", self.tr("\nShould be Loaded Before:")),
-                ("load_after_violations", self.tr("\nShould be Loaded After:")),
-            ]:
+            for error_type, tooltip_header in warning_sections:
                 if mod_errors[error_type]:
                     tool_tip_text += tooltip_header
                     errors = mod_errors[error_type]
@@ -3720,16 +3750,16 @@ class ModListWidget(QListWidget):
                 and pkg_id_str not in self.ignore_warning_list
             ):
                 # Add tool tip to indicate mod and game version mismatch
-                tool_tip_text += self.tr("\nMod and Game Version Mismatch")
+                tool_tip_text += version_mismatch_text
             # Handle "use this instead" behavior
             if (
                 self._check_use_this_instead(current_item_data)
                 and pkg_id_str not in self.ignore_warning_list
             ):
                 mod_errors["use_this_instead"] = True
-                tool_tip_text += self.tr(
-                    "\nAn alternative updated mod is recommended:\n{alternative}"
-                ).format(alternative=current_item_data["alternative"])
+                tool_tip_text += alternative_text.format(
+                    alternative=current_item_data["alternative"]
+                )
             # Add to error summary if any missing dependencies or incompatibilities
             if self.list_type == "Active" and any(
                 mod_errors[key]
