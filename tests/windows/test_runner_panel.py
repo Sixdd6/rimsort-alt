@@ -543,3 +543,43 @@ class TestProgressOffset:
 
         panel.progress_bar.setRange.assert_not_called()
         panel.progress_bar.setValue.assert_called_once_with(55)
+
+
+def _make_completed_panel(auto_close: bool = False) -> Any:
+    panel = RunnerPanel.__new__(RunnerPanel)
+    panel.auto_close_on_complete = auto_close
+    panel._refreshed_after_completion = False
+    panel.close = MagicMock()  # type: ignore[method-assign]
+    return panel
+
+
+class TestRunnerPanelRefreshAfterCompletion:
+    def test_completion_refreshes_even_if_the_window_stays_open(
+        self, fresh_event_bus: None
+    ) -> None:
+        """Clicking 'Ok' on the completion dialog must still show the new mods."""
+        refreshes: list[bool] = []
+        EventBus().do_metadata_refresh_cache.connect(lambda: refreshes.append(True))
+        panel = _make_completed_panel()
+
+        with patch("app.windows.runner_panel.BinaryChoiceDialog") as dialog:
+            dialog.return_value.exec_is_positive.return_value = False
+            panel.process_complete()
+        assert refreshes == [True]
+
+        # Closing afterwards (Escape / Close Window) does not refresh again
+        panel.exit_window()
+        assert refreshes == [True]
+        panel.close.assert_called_once()
+
+    def test_closing_mid_process_still_refreshes_once(
+        self, fresh_event_bus: None
+    ) -> None:
+        refreshes: list[bool] = []
+        EventBus().do_metadata_refresh_cache.connect(lambda: refreshes.append(True))
+        panel = _make_completed_panel()
+
+        panel.exit_window()
+        panel.exit_window()
+
+        assert refreshes == [True]

@@ -89,6 +89,9 @@ class RunnerPanel(QWidget):
         self.steam_db = steam_db or {}
         self.todds_dry_run_support = todds_dry_run_support
         self.auto_close_on_complete = auto_close_on_complete
+        # Set once the completed process has triggered a metadata refresh, so
+        # closing the window afterwards does not refresh again
+        self._refreshed_after_completion = False
 
         # Process-related variables
         self.process = QProcess()
@@ -822,6 +825,10 @@ class RunnerPanel(QWidget):
         self.change_progress_bar_color("success")
 
     def process_complete(self) -> None:
+        # Refresh now that the process is done, however the window is closed
+        # later (Close Window, Ok, Escape or the title bar); downloaded mods
+        # should appear without the user closing anything
+        self._refresh_metadata_once()
         if self.auto_close_on_complete:
             self.exit_window()
         else:
@@ -837,4 +844,10 @@ class RunnerPanel(QWidget):
     def exit_window(self) -> None:
         """Clean up resources when the process window is closed."""
         self.close()
+        self._refresh_metadata_once()
+
+    def _refresh_metadata_once(self) -> None:
+        if self._refreshed_after_completion:
+            return
+        self._refreshed_after_completion = True
         EventBus().do_metadata_refresh_cache.emit()
