@@ -231,11 +231,15 @@ def preview_popup_position(cell: QRect, size: QSize, screen: QRect) -> QPoint:
 
 
 class PreviewPopup(QFrame):
-    """Frameless tooltip-style window showing a mod's preview and identifiers."""
+    """Frameless tooltip-style window showing a mod's preview and identifiers.
 
-    def __init__(self) -> None:
+    The popup needs a parent widget: Wayland only positions tooltip windows
+    relative to a transient parent, so a parentless popup lands anywhere.
+    """
+
+    def __init__(self, parent: QWidget) -> None:
         super().__init__(
-            None, Qt.WindowType.ToolTip | Qt.WindowType.WindowDoesNotAcceptFocus
+            parent, Qt.WindowType.ToolTip | Qt.WindowType.WindowDoesNotAcceptFocus
         )
         # Themes style this name like their tooltips (see themes/*/style.qss)
         self.setObjectName("updateLogPreviewPopup")
@@ -289,7 +293,7 @@ class ModTableThumbnails(QObject):
             cache_size=64, max_side=PREVIEW_POPUP_WIDTH, cancel_pending=True
         )
         self._preview_loader.image_ready.connect(self._on_preview_ready)
-        self.popup = PreviewPopup()
+        self.popup = PreviewPopup(panel)
         self._hover_row = -1
         self._hover_timer = QTimer(self)
         self._hover_timer.setSingleShot(True)
