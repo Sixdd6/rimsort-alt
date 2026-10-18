@@ -139,6 +139,8 @@ class ModlistHistoryService:
     ) -> None:
         self.metadata_controller = metadata_controller
         self.settings = settings
+        # Parsed snapshots keyed by path, with the (mtime_ns, size) they were read at
+        self._snapshot_cache: dict[Path, tuple[tuple[int, int], Snapshot]] = {}
 
     # ------------------------------------------------------------------ paths
     def history_dir(self) -> Path:
@@ -302,15 +304,28 @@ class ModlistHistoryService:
 
     # ------------------------------------------------------------------ read
     def list_snapshots(self) -> list[Snapshot]:
-        """All snapshots for the current instance, newest first."""
+        """All snapshots for the current instance, newest first.
+
+        Snapshot files are only parsed when new or changed since the last call.
+        """
         snapshots: list[Snapshot] = []
+        cache: dict[Path, tuple[tuple[int, int], Snapshot]] = {}
         for path in self.history_dir().glob("*.json"):
             try:
-                snapshots.append(self.load_snapshot(path))
+                stat = path.stat()
+                version = (stat.st_mtime_ns, stat.st_size)
+                cached = self._snapshot_cache.get(path)
+                if cached is not None and cached[0] == version:
+                    snapshot = cached[1]
+                else:
+                    snapshot = self.load_snapshot(path)
+                cache[path] = (version, snapshot)
+                snapshots.append(snapshot)
             except (OSError, ValueError, TypeError, json.JSONDecodeError) as exc:
                 logger.warning(
                     f"Skipping unreadable history snapshot {path.name}: {exc}"
                 )
+        self._snapshot_cache = cache
         snapshots.sort(key=lambda snap: (snap.timestamp, snap.path.name), reverse=True)
         return snapshots
 

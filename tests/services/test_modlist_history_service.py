@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from unittest.mock import patch
 
 from app.models.metadata.metadata_structure import ModType
 from app.services.modlist_history_service import (
     ModlistHistoryService,
+    Snapshot,
     compute_list_id,
 )
 
@@ -53,6 +55,15 @@ def _make_service(
     return service, settings
 
 
+def _service_with_two_snapshots() -> tuple[ModlistHistoryService, Snapshot, Snapshot]:
+    """A service holding an older (a.mod) and a newer (a.mod, b.mod) snapshot."""
+    service, _ = _make_service(["a.mod", "b.mod"])
+    first = service.write_snapshot(["a.mod"], ["b.mod"])
+    second = service.write_snapshot(["a.mod", "b.mod"], [])
+    assert first is not None and second is not None
+    return service, first, second
+
+
 class TestComputeListId:
     def test_deterministic(self) -> None:
         assert compute_list_id(["a.b", "c.d"]) == compute_list_id(["a.b", "c.d"])
@@ -92,12 +103,34 @@ class TestWriteSnapshot:
         assert len(list(service.history_dir().glob("*.json"))) == 1
 
     def test_previous_id_chains(self) -> None:
-        service, _ = _make_service(["a.mod", "b.mod"])
-        first = service.write_snapshot(["a.mod"], ["b.mod"])
-        second = service.write_snapshot(["a.mod", "b.mod"], [])
+        _service, first, second = _service_with_two_snapshots()
 
-        assert first is not None and second is not None
         assert second.previous_id == first.id
+
+
+class TestListSnapshotsCache:
+    def test_unchanged_snapshots_are_not_reparsed(self) -> None:
+        service, _first, _second = _service_with_two_snapshots()
+        service.list_snapshots()
+
+        with patch.object(
+            service, "load_snapshot", wraps=service.load_snapshot
+        ) as load_snapshot:
+            snapshots = service.list_snapshots()
+
+        assert len(snapshots) == 2
+        load_snapshot.assert_not_called()
+
+    def test_changed_and_deleted_snapshots_are_picked_up(self) -> None:
+        service, first, second = _service_with_two_snapshots()
+        service.list_snapshots()
+
+        service.set_note(second.path, "a much longer note than before")
+        first.path.unlink()
+        snapshots = service.list_snapshots()
+
+        assert [snap.path for snap in snapshots] == [second.path]
+        assert snapshots[0].note == "a much longer note than before"
 
 
 class TestPrune:
