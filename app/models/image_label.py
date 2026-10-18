@@ -39,6 +39,11 @@ class ImageLabel(QLabel):
             )
             super().setPixmap(scaled_pixmap)
 
+    def clear(self) -> None:
+        """Clear the label and forget the original pixmap."""
+        self._original_pixmap = None
+        super().clear()
+
     def resizeEvent(self, event: QResizeEvent) -> None:
         """
         When the label is resized (as the window is resized),

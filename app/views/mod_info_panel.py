@@ -6,7 +6,7 @@ from typing import Any
 
 from loguru import logger
 from PySide6.QtCore import QCoreApplication, QObject, Qt, QThread, Signal
-from PySide6.QtGui import QMouseEvent, QPixmap
+from PySide6.QtGui import QImage, QMouseEvent, QPixmap
 from PySide6.QtWidgets import (
     QComboBox,
     QFrame,
@@ -34,6 +34,7 @@ from app.utils.github.models import CacheBase, GitHubModEntry, GitHubReleaseCach
 from app.utils.github.provider import GitHubProvider, _releases_from_json
 from app.utils.mod_info import UNKNOWN, ModInfo
 from app.utils.mod_utils import resolve_aux_timestamps
+from app.utils.preview_image_loader import PreviewImageLoader
 from app.views.description_widget import DescriptionWidget
 
 # Constants for layout proportions
@@ -196,6 +197,10 @@ class ModInfoPanel:
             AppInfo().theme_data_folder / "default-icons" / "rimworld.png"
         )
         self.preview_picture = ImageLabel()
+        # Path of the preview image the panel is waiting for, if any
+        self._pending_preview_path: str | None = None
+        self._preview_loader = PreviewImageLoader()
+        self._preview_loader.image_ready.connect(self._on_preview_image_ready)
         self.preview_picture.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.preview_picture.setSizePolicy(
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
@@ -975,13 +980,9 @@ class ModInfoPanel:
         self, mod_metadata: dict[str, Any], is_scenario: bool
     ) -> None:
         """Load and set the preview image for the mod."""
+        self._pending_preview_path = None
         if is_scenario:
-            pixmap = QPixmap(self.scenario_image_path)
-            self.preview_picture.setPixmap(
-                pixmap.scaled(
-                    self.preview_picture.size(), Qt.AspectRatioMode.KeepAspectRatio
-                )
-            )
+            self.preview_picture.setPixmap(QPixmap(self.scenario_image_path))
         else:
             # Get Preview.png
             workshop_folder_path = mod_metadata.get("path", "")
@@ -1020,13 +1021,7 @@ class ModInfoPanel:
                     # If there was an issue getting the expected path, track and exit
                     if invalid_folder_path_found or invalid_file_path_found:
                         logger.debug("No preview image found for the mod")
-                        pixmap = QPixmap(self.missing_image_path)
-                        self.preview_picture.setPixmap(
-                            pixmap.scaled(
-                                self.preview_picture.size(),
-                                Qt.AspectRatioMode.KeepAspectRatio,
-                            )
-                        )
+                        self.preview_picture.setPixmap(QPixmap(self.missing_image_path))
                     else:
                         logger.debug("Preview image found")
                         image_path = str(
@@ -1034,21 +1029,29 @@ class ModInfoPanel:
                             / about_folder_name
                             / preview_file_name
                         )
-                        pixmap = QPixmap(image_path)
-                        self.preview_picture.setPixmap(
-                            pixmap.scaled(
-                                self.preview_picture.size(),
-                                Qt.AspectRatioMode.KeepAspectRatio,
-                            )
-                        )
+                        self._show_preview_image(image_path)
                 else:
-                    pixmap = QPixmap(self.missing_image_path)
-                    self.preview_picture.setPixmap(
-                        pixmap.scaled(
-                            self.preview_picture.size(),
-                            Qt.AspectRatioMode.KeepAspectRatio,
-                        )
-                    )
+                    self.preview_picture.setPixmap(QPixmap(self.missing_image_path))
+
+    def _show_preview_image(self, image_path: str) -> None:
+        """Show a cached preview, or clear the picture until it is decoded."""
+        self._pending_preview_path = image_path
+        image = self._preview_loader.load(image_path)
+        if image is not None:
+            self._pending_preview_path = None
+            self.preview_picture.setPixmap(image)
+        elif self._pending_preview_path == image_path:
+            self.preview_picture.clear()
+
+    def _on_preview_image_ready(self, image_path: str, image: QImage) -> None:
+        """Show a decoded preview if it is still the one being waited for."""
+        if image_path != self._pending_preview_path:
+            return
+        self._pending_preview_path = None
+        if image.isNull():
+            self.preview_picture.setPixmap(QPixmap(self.missing_image_path))
+        else:
+            self.preview_picture.setPixmap(image)
 
     def display_mod_info(self, uuid: str) -> None:
         """
