@@ -3785,10 +3785,6 @@ Alternative Dependencies:</source>
         <translation>Color</translation>
     </message>
     <message>
-        <source>Check Dependencies</source>
-        <translation>Comprobar dependencias</translation>
-    </message>
-    <message>
         <source>Active</source>
         <translation>Activo</translation>
     </message>

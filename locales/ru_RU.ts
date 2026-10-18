@@ -3797,10 +3797,6 @@ Alternative Dependencies:</source>
         <translation>Цвет</translation>
     </message>
     <message>
-        <source>Check Dependencies</source>
-        <translation>Проверить зависимости</translation>
-    </message>
-    <message>
         <source>Active</source>
         <translation>Активные</translation>
     </message>

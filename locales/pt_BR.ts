@@ -3803,10 +3803,6 @@ Um mod alternativo atualizado é recomendado:
         <translation>Cor</translation>
     </message>
     <message>
-        <source>Check Dependencies</source>
-        <translation>Verificar Dependências</translation>
-    </message>
-    <message>
         <source>Active</source>
         <translation>Ativo</translation>
     </message>

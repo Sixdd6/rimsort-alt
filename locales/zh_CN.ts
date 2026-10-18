@@ -3799,10 +3799,6 @@ Alternative Dependencies:</source>
         <translation>查看&quot;替代为此&quot;数据库</translation>
     </message>
     <message>
-        <source>Check Dependencies</source>
-        <translation>查看依赖</translation>
-    </message>
-    <message>
         <source>Active</source>
         <translation>启用</translation>
     </message>

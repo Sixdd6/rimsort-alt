@@ -3824,10 +3824,6 @@ Alternative Dependencies:</source>
         <translation>Farbe</translation>
     </message>
     <message>
-        <source>Check Dependencies</source>
-        <translation>Überprüfen Sie die Abhängigkeiten</translation>
-    </message>
-    <message>
         <source>Active</source>
         <translation>Aktiv</translation>
     </message>

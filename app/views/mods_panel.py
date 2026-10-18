@@ -4219,8 +4219,6 @@ class ModsPanel(QWidget):
     active/inactive mods list panel on the GUI.
     """
 
-    check_dependencies_signal = Signal()
-
     # OPTIMIZATION: Class-level constant for sort text to enum mapping
     # Centralizes the text->enum conversion logic
     # jscpd:ignore-start
@@ -4349,15 +4347,6 @@ class ModsPanel(QWidget):
         )
         self.button_panel.addWidget(self.use_this_instead_button)
 
-        # Create and add Check Dependencies button
-        self.check_dependencies_button: QPushButton = QPushButton(
-            self.tr("Check Dependencies")
-        )
-        self.check_dependencies_button.setObjectName("CheckDependenciesButton")
-        self.button_panel.addWidget(self.check_dependencies_button)
-        self.check_dependencies_button.clicked.connect(
-            self.check_dependencies_signal.emit
-        )
         self.button_panel_frame.setLayout(self.button_panel)
 
         # Add the buttons frame below the lists panel

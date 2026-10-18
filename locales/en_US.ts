@@ -3761,10 +3761,6 @@ Alternative Dependencies:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Check Dependencies</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Active</source>
         <translation type="unfinished"></translation>
     </message>

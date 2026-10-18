@@ -3799,10 +3799,6 @@ Alternative Dependencies:</source>
         <translation>檢查『改用此項』資料庫</translation>
     </message>
     <message>
-        <source>Check Dependencies</source>
-        <translation>檢查依賴項</translation>
-    </message>
-    <message>
         <source>Active</source>
         <translation>啟用</translation>
     </message>

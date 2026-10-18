@@ -3828,10 +3828,6 @@ Alternative Dependencies:</source>
         <translation>색상</translation>
     </message>
     <message>
-        <source>Check Dependencies</source>
-        <translation>의존성 확인</translation>
-    </message>
-    <message>
         <source>Active</source>
         <translation>활성화</translation>
     </message>

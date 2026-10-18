@@ -3794,10 +3794,6 @@ An alternative updated mod is recommended:
         <translation>Renk</translation>
     </message>
     <message>
-        <source>Check Dependencies</source>
-        <translation>Gerekli Modları Kontrol Et</translation>
-    </message>
-    <message>
         <source>Active</source>
         <translation>Etkin</translation>
     </message>
