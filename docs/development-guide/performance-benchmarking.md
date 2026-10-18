@@ -29,6 +29,7 @@ The benchmark (`tests/benchmarks/bench_app.py`) builds the real `MainContent` pa
 | `populate_lists` | Read `ModsConfig.xml` and rebuild both mod lists, including error and warning checks |
 | `search_typing` | Type `vanilla` into the inactive search box one key at a time, then clear it |
 | `move_mods` | Select `--move` inactive mods and press Return to move them to the active list |
+| `select_mods` | Select 40 inactive mods one after another, as when holding the down arrow key, updating the mod info panel each time |
 | `sort` | Sort the active list (dependency dialog off) |
 | `sort_again` | Sort the already sorted active list again |
 | `dependency_check` | Build the missing-dependency report used before sorting |

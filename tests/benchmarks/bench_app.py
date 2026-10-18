@@ -217,6 +217,13 @@ class _Bench:
         inactive.key_press_signal.emit("Return")
         self.drain_events()
 
+    def select_mods(self) -> None:
+        """Step through inactive mods like holding the down arrow key."""
+        inactive = self.main_content.mods_panel.inactive_mods_list
+        for row in range(min(40, inactive.count())):
+            inactive.setCurrentRow(row)
+            self.drain_events()
+
     def sort(self) -> None:
         self.main_content._do_sort(check_deps=False)
         self.drain_events()
@@ -316,6 +323,7 @@ def main(argv: list[str] | None = None) -> int:
         ("populate_lists", bench.populate, None),
         ("search_typing", bench.search, None),
         ("move_mods", bench.move, bench.populate),
+        ("select_mods", bench.select_mods, None),
         ("sort", bench.sort, bench.populate),
         ("sort_again", bench.sort, None),
         ("dependency_check", bench.dependency_check, None),
