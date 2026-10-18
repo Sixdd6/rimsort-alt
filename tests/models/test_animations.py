@@ -36,3 +36,15 @@ def test_loading_animation_captures_thread_exception(qtbot: QtBot) -> None:
 
     # Cleanup
     anim.deleteLater()
+
+
+def test_loading_animation_finishes_when_thread_completes(qtbot: QtBot) -> None:
+    """The animation stops once the work is done, without waiting on GIF frames."""
+    anim = LoadingAnimation(gif_path="nonexistent.gif", target=lambda: 42)
+
+    with qtbot.waitSignal(anim.finished, timeout=2000):
+        pass
+
+    assert anim.animation_finished is True
+    assert anim.data == 42
+    anim.deleteLater()

@@ -96,7 +96,6 @@ class LoadingAnimation(QWidget):
         # Label and layout
         self._layout = QVBoxLayout(self)
         self.movie = QMovie(self.gif_path)
-        self.movie.frameChanged.connect(self.check_animation_stop)
         self.movie.start()
 
         self.label = QLabel()
@@ -107,23 +106,17 @@ class LoadingAnimation(QWidget):
 
         logger.debug("Finished LoadingAnimation initialization")
 
-    def check_animation_stop(self, frame_number: int) -> None:
-        """Checks if the animation should stop."""
-        if self.animation_finished and frame_number == self.movie.frameCount() - 1:
-            logger.debug("Animation is finished")
-            self.stop_animation()
-
     def handle_data(self, data: Any) -> None:
         """Handle data received from thread."""
         logger.debug(f"Received {type(data)} from thread")
         self.data = data
 
     def prepare_stop_animation(self) -> None:
-        """Prepare to stop the animation."""
-        # Set flag and copy thread exception when thread finished
+        """Stop the animation as soon as the thread has finished."""
         logger.debug("Flagging animation to complete")
         self.exception = self._thread.exception
         self.animation_finished = True
+        self.stop_animation()
 
     def stop_animation(self) -> None:
         """Stop the animation."""
