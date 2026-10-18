@@ -6,13 +6,7 @@ from pytestqt.qtbot import QtBot
 
 from app.models.image_label import ImageLabel
 from app.utils.preview_image_loader import PreviewImageLoader
-
-
-def _write_png(path: Path, width: int, height: int) -> str:
-    image = QImage(width, height, QImage.Format.Format_RGB32)
-    image.fill(QColor("red"))
-    assert image.save(str(path))
-    return str(path)
+from tests.image_fixtures import write_png
 
 
 def _decode(qtbot: QtBot, loader: PreviewImageLoader, path: str) -> QImage:
@@ -29,7 +23,7 @@ def test_decodes_in_background_then_serves_from_cache(
     qtbot: QtBot, tmp_path: Path
 ) -> None:
     loader = PreviewImageLoader()
-    path = _write_png(tmp_path / "Preview.png", 40, 20)
+    path = write_png(tmp_path / "Preview.png", 40, 20)
 
     image = _decode(qtbot, loader, path)
     cached = loader.load(path)
@@ -41,7 +35,7 @@ def test_decodes_in_background_then_serves_from_cache(
 
 def test_large_images_are_scaled_to_max_side(qtbot: QtBot, tmp_path: Path) -> None:
     loader = PreviewImageLoader(max_side=50)
-    path = _write_png(tmp_path / "Preview.png", 200, 100)
+    path = write_png(tmp_path / "Preview.png", 200, 100)
 
     image = _decode(qtbot, loader, path)
 
@@ -61,10 +55,10 @@ def test_missing_file_reports_null_image(qtbot: QtBot, tmp_path: Path) -> None:
 
 def test_changed_file_is_decoded_again(qtbot: QtBot, tmp_path: Path) -> None:
     loader = PreviewImageLoader()
-    path = _write_png(tmp_path / "Preview.png", 40, 20)
+    path = write_png(tmp_path / "Preview.png", 40, 20)
     _decode(qtbot, loader, path)
 
-    _write_png(tmp_path / "Preview.png", 30, 30)
+    write_png(tmp_path / "Preview.png", 30, 30)
     stat = os.stat(path)
     os.utime(path, ns=(stat.st_atime_ns, stat.st_mtime_ns + 1_000_000_000))
     image = _decode(qtbot, loader, path)

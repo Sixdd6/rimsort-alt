@@ -200,6 +200,7 @@ class ModInfoPanel:
         # Path of the preview image the panel is waiting for, if any
         self._pending_preview_path: str | None = None
         self._preview_loader = PreviewImageLoader()
+        self._placeholder_pixmaps: dict[str, QPixmap] = {}
         self._preview_loader.image_ready.connect(self._on_preview_image_ready)
         self.preview_picture.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.preview_picture.setSizePolicy(
@@ -982,7 +983,9 @@ class ModInfoPanel:
         """Load and set the preview image for the mod."""
         self._pending_preview_path = None
         if is_scenario:
-            self.preview_picture.setPixmap(QPixmap(self.scenario_image_path))
+            self.preview_picture.setPixmap(
+                self._placeholder_pixmap(self.scenario_image_path)
+            )
         else:
             # Get Preview.png
             workshop_folder_path = mod_metadata.get("path", "")
@@ -1021,7 +1024,9 @@ class ModInfoPanel:
                     # If there was an issue getting the expected path, track and exit
                     if invalid_folder_path_found or invalid_file_path_found:
                         logger.debug("No preview image found for the mod")
-                        self.preview_picture.setPixmap(QPixmap(self.missing_image_path))
+                        self.preview_picture.setPixmap(
+                            self._placeholder_pixmap(self.missing_image_path)
+                        )
                     else:
                         logger.debug("Preview image found")
                         image_path = str(
@@ -1031,7 +1036,25 @@ class ModInfoPanel:
                         )
                         self._show_preview_image(image_path)
                 else:
-                    self.preview_picture.setPixmap(QPixmap(self.missing_image_path))
+                    self.preview_picture.setPixmap(
+                        self._placeholder_pixmap(self.missing_image_path)
+                    )
+
+    def _placeholder_pixmap(self, image_path: str) -> QPixmap:
+        """Load a bundled placeholder image once, capped like decoded previews."""
+        pixmap = self._placeholder_pixmaps.get(image_path)
+        if pixmap is None:
+            pixmap = QPixmap(image_path)
+            max_side = self._preview_loader.max_side
+            if max(pixmap.width(), pixmap.height()) > max_side:
+                pixmap = pixmap.scaled(
+                    max_side,
+                    max_side,
+                    Qt.AspectRatioMode.KeepAspectRatio,
+                    Qt.TransformationMode.SmoothTransformation,
+                )
+            self._placeholder_pixmaps[image_path] = pixmap
+        return pixmap
 
     def _show_preview_image(self, image_path: str) -> None:
         """Show a cached preview, or clear the picture until it is decoded."""
@@ -1049,7 +1072,9 @@ class ModInfoPanel:
             return
         self._pending_preview_path = None
         if image.isNull():
-            self.preview_picture.setPixmap(QPixmap(self.missing_image_path))
+            self.preview_picture.setPixmap(
+                self._placeholder_pixmap(self.missing_image_path)
+            )
         else:
             self.preview_picture.setPixmap(image)
 

@@ -4,12 +4,14 @@ from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QSize, Qt
+from PySide6.QtGui import QColor, QImage
 
 from app.models.metadata.metadata_structure import ListedMod
 from app.models.settings import Settings
 from app.utils.generic import format_file_size
 from app.views.mod_info_panel import ClickablePathLabel, ModInfoPanel
+from tests.image_fixtures import write_png
 
 
 @pytest.fixture
@@ -332,3 +334,39 @@ def test_stale_folder_size_results_are_ignored(panel: ModInfoPanel) -> None:
     assert panel.mod_info_folder_size_value.text() == "Start"
     panel._on_folder_size_result("modB", 10, 12345)
     assert panel.mod_info_folder_size_value.text() == format_file_size(12345)
+
+
+def test_preview_image_is_shown_after_background_decode(
+    panel: ModInfoPanel, qtbot: Any, tmp_path: Path
+) -> None:
+    write_png(tmp_path / "About" / "Preview.png", 64, 32)
+
+    panel._load_preview_image({"path": str(tmp_path)}, is_scenario=False)
+
+    qtbot.waitUntil(lambda: panel._pending_preview_path is None, timeout=5000)
+    assert panel.preview_picture._original_pixmap is not None
+    assert panel.preview_picture._original_pixmap.size() == QSize(64, 32)
+
+
+def test_stale_preview_result_is_ignored(panel: ModInfoPanel, tmp_path: Path) -> None:
+    image = QImage(8, 8, QImage.Format.Format_RGB32)
+    image.fill(QColor("green"))
+    panel.preview_picture.clear()
+    panel._pending_preview_path = str(tmp_path / "current.png")
+
+    panel._on_preview_image_ready(str(tmp_path / "previous.png"), image)
+
+    assert panel.preview_picture._original_pixmap is None
+    assert panel._pending_preview_path == str(tmp_path / "current.png")
+
+
+def test_placeholder_pixmap_is_loaded_once_and_capped(
+    panel: ModInfoPanel, tmp_path: Path
+) -> None:
+    path = write_png(tmp_path / "missing.png", 2048, 1024)
+
+    first = panel._placeholder_pixmap(path)
+    second = panel._placeholder_pixmap(path)
+
+    assert first is second
+    assert first.size() == QSize(1024, 512)
