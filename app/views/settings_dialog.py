@@ -682,7 +682,7 @@ class SettingsDialog(QDialog):
         section_lbl = self.tr('"Use This Instead" Database')
         none_lbl = self.tr('"Use This Instead" Database')
         (
-            _,
+            group_layout,
             self.use_this_instead_db_none_radio,
             self.use_this_instead_db_github_radio,
             self.use_this_instead_db_github_url,
@@ -706,7 +706,7 @@ class SettingsDialog(QDialog):
                 "them again. Off: originals are only deactivated."
             )
         )
-        tab_layout.addWidget(self.use_this_instead_delete_replaced_checkbox)
+        group_layout.addWidget(self.use_this_instead_delete_replaced_checkbox)
 
     def _do_rimworld_versions_db_group(self, tab_layout: QBoxLayout) -> None:
         section_lbl = self.tr("RimWorld Versions Database")
