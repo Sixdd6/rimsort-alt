@@ -59,13 +59,27 @@ def auxdb_get_mod_color(
     # jscpd:ignore-end
     """
     entry = auxdb_get_aux_db_entry(settings, path, aux_db_controller, session)
-    mod_color = None
-    if entry:
-        color_text = entry.color_hex
-        if color_text is not None:
-            mod_color = QColor(color_text)
+    return aux_entry_mod_color(entry) if entry else None
 
-    return mod_color
+
+def aux_entry_mod_color(entry: AuxMetadataEntry) -> QColor | None:
+    """
+    Get the mod color stored on an aux metadata entry.
+
+    :param entry: AuxMetadataEntry, the mod's aux metadata entry
+    :return: QColor | None, Color of the mod, or None if no color
+    """
+    return QColor(entry.color_hex) if entry.color_hex is not None else None
+
+
+def aux_entry_mod_tags(entry: AuxMetadataEntry) -> list[str]:
+    """
+    Get the sorted user-defined tags stored on an aux metadata entry.
+
+    :param entry: AuxMetadataEntry, the mod's aux metadata entry
+    :return: list[str], the mod's tags in alphabetical order
+    """
+    return sorted(tag.tag for tag in entry.tags)
 
 
 def auxdb_get_mod_user_notes(
@@ -205,7 +219,7 @@ def auxdb_get_mod_tags(
         if not entry:
             return []
 
-        return sorted(tag.tag for tag in entry.tags)
+        return aux_entry_mod_tags(entry)
     finally:
         if not session:
             local_session.close()

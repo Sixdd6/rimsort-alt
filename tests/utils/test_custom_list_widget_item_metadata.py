@@ -155,3 +155,40 @@ class TestGetUpdatedTimestampByPath:
             )
 
         assert result is None
+
+
+class TestPrefetchedAuxEntry:
+    def test_fields_come_from_entry_without_aux_lookups(self) -> None:
+        """A prefetched aux entry fills every aux-backed field, no DB lookups."""
+        entry = _aux_entry(acf=4242)
+        entry.ignore_warnings = True
+        entry.color_hex = "#ff0000"
+        entry.user_notes = "notes"
+        entry.tags = [MagicMock(tag="zeta"), MagicMock(tag="alpha")]
+        settings = MagicMock()
+        settings.mod_list_updated_indicator = True
+
+        with (
+            patch(f"{MODULE}.MetadataController.instance") as mock_instance,
+            patch(f"{MODULE}.auxdb_get_aux_db_entry") as mock_get_entry,
+            patch(f"{MODULE}.auxdb_get_mod_color") as mock_color,
+            patch(f"{MODULE}.auxdb_get_mod_tags") as mock_tags,
+            patch(f"{MODULE}.auxdb_get_mod_user_notes") as mock_notes,
+            patch(f"{MODULE}.auxdb_get_mod_warning_toggled") as mock_warning,
+        ):
+            mock_instance.return_value.get_mod.return_value = _mod(
+                ModType.STEAM_WORKSHOP
+            )
+            mock_instance.return_value.has_alternative_mod.return_value = None
+            data = CustomListWidgetItemMetadata(
+                path="/mods/ws", settings=settings, aux_entry=entry
+            )
+
+        assert data.warning_toggled is True
+        assert data.mod_color is not None
+        assert data.mod_color.name() == "#ff0000"
+        assert data.mod_tags == ["alpha", "zeta"]
+        assert data.user_notes == "notes"
+        assert data.updated_timestamp == 4242
+        for lookup in (mock_get_entry, mock_color, mock_tags, mock_notes, mock_warning):
+            lookup.assert_not_called()

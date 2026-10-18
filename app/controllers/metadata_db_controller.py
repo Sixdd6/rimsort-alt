@@ -5,11 +5,14 @@ from typing import Any
 from loguru import logger
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session, selectinload, sessionmaker
 
 from app.models.metadata.metadata_db import AuxMetadataEntry, Base
 from app.models.metadata.metadata_structure import ModType
 from app.utils.steam.steamfiles.wrapper import acf_to_dict
+
+# Stays well below SQLite's bound-parameter limit on every supported version.
+_BULK_QUERY_CHUNK_SIZE = 500
 
 
 class MetadataDbController:
@@ -209,6 +212,54 @@ class AuxMetadataController(MetadataDbController):
                 raise
 
         return entry
+
+    @staticmethod
+    def get_many(
+        session: Session, item_paths: Iterable[Path | str]
+    ) -> dict[str, AuxMetadataEntry]:
+        """Get the existing aux metadata entries for many paths with few queries.
+
+        Entries are fetched in chunks with their tags eagerly loaded, so
+        reading ``entry.tags`` afterwards issues no further queries.
+
+        :param session: The database session.
+        :type session: Session
+        :param item_paths: The key paths.
+        :type item_paths: Iterable[Path | str]
+        :return: The entries that exist, keyed by path.
+        :rtype: dict[str, AuxMetadataEntry]
+        """
+        paths = list(dict.fromkeys(str(path) for path in item_paths))
+        entries: dict[str, AuxMetadataEntry] = {}
+        for start in range(0, len(paths), _BULK_QUERY_CHUNK_SIZE):
+            chunk = paths[start : start + _BULK_QUERY_CHUNK_SIZE]
+            for entry in (
+                session.query(AuxMetadataEntry)
+                .options(selectinload(AuxMetadataEntry.tags))
+                .filter(AuxMetadataEntry.path.in_(chunk))
+            ):
+                entries[entry.path] = entry
+        return entries
+
+    @staticmethod
+    def get_or_create_many(
+        session: Session, item_paths: Iterable[Path | str]
+    ) -> dict[str, AuxMetadataEntry]:
+        """Get or create aux metadata entries for many paths with few queries.
+
+        :param session: The database session.
+        :type session: Session
+        :param item_paths: The key paths.
+        :type item_paths: Iterable[Path | str]
+        :return: The aux metadata entries keyed by path.
+        :rtype: dict[str, AuxMetadataEntry]
+        """
+        paths = [str(path) for path in item_paths]
+        entries = AuxMetadataController.get_many(session, paths)
+        for path in paths:
+            if path not in entries:
+                entries[path] = AuxMetadataController.get_or_create(session, path)
+        return entries
 
     @staticmethod
     def get_value_equals(

@@ -2819,16 +2819,19 @@ class ModListWidget(QListWidget):
             self.settings.aux_db_path
         )
         with aux_metadata_controller.Session() as aux_metadata_session:
-            aux_metadata_controller.get_or_create(aux_metadata_session, mod_path)
-            aux_metadata_controller.update(
-                aux_metadata_session, mod_path, outdated=False
+            aux_entry = aux_metadata_controller.get_or_create(
+                aux_metadata_session, mod_path
             )
+            if aux_entry.outdated:
+                aux_entry.outdated = False
+            aux_metadata_session.commit()
             data = CustomListWidgetItemMetadata(
                 path=uuid,
                 list_type=self.list_type,
+                settings=self.settings,
                 aux_metadata_controller=aux_metadata_controller,
                 aux_metadata_session=aux_metadata_session,
-                settings=self.settings,
+                aux_entry=aux_entry if mod_path == uuid else None,
             )
             data.__dict__["show_tags"] = self.show_tags
         # Create item without a parent first so we can set data before adding to the list.
@@ -3945,35 +3948,39 @@ class ModListWidget(QListWidget):
         self.clear()
         self.paths = []
         if uuids:  # Insert data...
-            for uuid_key in uuids:
-                if is_divider_uuid(uuid_key):
-                    continue
+            mod_uuids = [u for u in uuids if not is_divider_uuid(u)]
+            mod_paths: list[str] = []
+            for uuid_key in mod_uuids:
                 _mod = self.metadata_controller.get_mod(uuid_key)
-                mod_path = str(_mod.mod_path) if _mod and _mod.mod_path else uuid_key
-                aux_metadata_controller = (
-                    AuxMetadataController.get_or_create_cached_instance(
-                        self.settings.aux_db_path
-                    )
+                mod_paths.append(
+                    str(_mod.mod_path) if _mod and _mod.mod_path else uuid_key
                 )
-                with aux_metadata_controller.Session() as aux_metadata_session:
-                    aux_metadata_controller.get_or_create(
-                        aux_metadata_session, mod_path
-                    )
-                    aux_metadata_controller.update(
-                        aux_metadata_session, mod_path, outdated=False
-                    )
+            aux_metadata_controller = (
+                AuxMetadataController.get_or_create_cached_instance(
+                    self.settings.aux_db_path
+                )
+            )
+            with aux_metadata_controller.Session() as aux_metadata_session:
+                aux_entries = aux_metadata_controller.get_or_create_many(
+                    aux_metadata_session, mod_paths
+                )
+                for mod_path in mod_paths:
+                    if aux_entries[mod_path].outdated:
+                        aux_entries[mod_path].outdated = False
+                aux_metadata_session.commit()
+                for uuid_key in mod_uuids:
                     list_item = CustomListWidgetItem(self)
                     data = CustomListWidgetItemMetadata(
                         path=uuid_key,
                         list_type=self.list_type,
+                        settings=self.settings,
                         aux_metadata_controller=aux_metadata_controller,
                         aux_metadata_session=aux_metadata_session,
-                        settings=self.settings,
+                        aux_entry=aux_entries.get(uuid_key),
                     )
                     data.__dict__["show_tags"] = self.show_tags
-                list_item.setData(Qt.ItemDataRole.UserRole, data)
-                self.addItem(list_item)
-                # When refreshing, update entry if needed?
+                    list_item.setData(Qt.ItemDataRole.UserRole, data)
+                    self.addItem(list_item)
             # Set uuids list to match the widget after all items are added
             self.paths = list(uuids)
 
@@ -4752,15 +4759,18 @@ class ModsPanel(QWidget):
 
             # OPTIMIZATION 1: Single DB session for all mods instead of per-mod
             with aux_metadata_controller.Session() as aux_metadata_session:
+                aux_entries = aux_metadata_controller.get_many(
+                    aux_metadata_session, sorted_uuids
+                )
                 for idx, uuid_key in enumerate(sorted_uuids, start=1):
                     list_item = CustomListWidgetItem(lw)
-                    # Create metadata with aux controller to reduce lookups
                     data = CustomListWidgetItemMetadata(
                         path=uuid_key,
                         list_type=lw.list_type,
                         settings=self.settings,
                         aux_metadata_controller=aux_metadata_controller,
                         aux_metadata_session=aux_metadata_session,
+                        aux_entry=aux_entries.get(uuid_key),
                     )
                     data.__dict__["show_tags"] = lw.show_tags
                     list_item.setData(Qt.ItemDataRole.UserRole, data)

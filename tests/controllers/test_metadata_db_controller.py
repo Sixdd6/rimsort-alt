@@ -49,6 +49,40 @@ def test_get(temp_db: AuxMetadataController) -> None:
         assert entry.path == str(item_path)
 
 
+def test_get_many_returns_existing_entries_only(
+    temp_db: AuxMetadataController,
+) -> None:
+    with temp_db.Session() as session:
+        temp_db.get_or_create(session, "/test/a")
+        temp_db.get_or_create(session, "/test/b")
+        session.commit()
+
+    with temp_db.Session() as session:
+        entries = temp_db.get_many(session, ["/test/a", Path("/test/b"), "/test/c"])
+        assert set(entries) == {"/test/a", str(Path("/test/b"))}
+        assert session.query(AuxMetadataEntry).count() == 2
+
+
+def test_get_or_create_many_creates_missing_and_loads_tags(
+    temp_db: AuxMetadataController,
+) -> None:
+    with temp_db.Session() as session:
+        entry = temp_db.get_or_create(session, "/test/tagged")
+        entry.tags = [TagsEntry(tag="b"), TagsEntry(tag="a")]
+        session.commit()
+
+    paths = ["/test/tagged", *(f"/test/new{i}" for i in range(1200)), "/test/new0"]
+    with temp_db.Session() as session:
+        entries = temp_db.get_or_create_many(session, paths)
+        session.commit()
+        tagged = entries["/test/tagged"]
+
+    assert len(entries) == 1201
+    assert sorted(tag.tag for tag in tagged.tags) == ["a", "b"]
+    with temp_db.Session() as session:
+        assert session.query(AuxMetadataEntry).count() == 1201
+
+
 def test_get_value_equals(temp_db: AuxMetadataController) -> None:
     item_path1 = Path("/test/path1")
     item_path2 = Path("/test/path2")
