@@ -11,7 +11,7 @@ from app.models.metadata.metadata_structure import (
 from app.models.settings import Settings
 from app.utils.custom_list_widget_item import CustomListWidgetItem
 from app.utils.custom_list_widget_item_metadata import CustomListWidgetItemMetadata
-from app.views.mods_panel import ModsPanel
+from app.views.mods_panel import SEARCH_DEBOUNCE_MS, ModsPanel
 
 
 def _add_mod_item(panel: ModsPanel, list_type: str, path: str) -> CustomListWidgetItem:
@@ -104,3 +104,40 @@ def test_author_search_filters_mods_without_authors(
     panel.signal_search_and_filters("Active", "author")
 
     assert item.isHidden()
+
+
+def _bare_panel(qtbot: object) -> tuple[ModsPanel, MagicMock]:
+    metadata = MagicMock()
+    metadata.mods_metadata = {}
+    panel = ModsPanel(Settings(), metadata)
+    qtbot.addWidget(panel)  # type: ignore[attr-defined]
+    run_filter = MagicMock()
+    panel.signal_search_and_filters = run_filter  # type: ignore[method-assign]
+    return panel, run_filter
+
+
+def test_typing_filters_once_after_debounce(qtbot: object) -> None:
+    panel, run_filter = _bare_panel(qtbot)
+
+    for text in ("v", "va", "van"):
+        panel.inactive_mods_search.setText(text)
+    assert run_filter.call_count == 0
+
+    qtbot.waitUntil(lambda: run_filter.call_count == 1, timeout=2000)  # type: ignore[attr-defined]
+    qtbot.wait(SEARCH_DEBOUNCE_MS * 2)  # type: ignore[attr-defined]
+    run_filter.assert_called_once_with(list_type="Inactive", pattern="van")
+
+
+def test_clearing_search_filters_immediately_and_cancels_pending(
+    qtbot: object,
+) -> None:
+    panel, run_filter = _bare_panel(qtbot)
+    panel.active_mods_search.setText("van")
+
+    panel.signal_clear_search("Active")
+    assert run_filter.call_count == 1
+    run_filter.assert_called_with(list_type="Active", pattern="")
+
+    qtbot.wait(SEARCH_DEBOUNCE_MS * 2)  # type: ignore[attr-defined]
+    assert run_filter.call_count == 1
+    assert panel.active_mods_search.text() == ""

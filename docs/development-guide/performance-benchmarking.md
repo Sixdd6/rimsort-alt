@@ -27,7 +27,7 @@ The benchmark (`tests/benchmarks/bench_app.py`) builds the real `MainContent` pa
 | --- | --- |
 | `refresh_metadata` | `MetadataController.refresh_metadata`: scan mod folders, parse every `About.xml`, load the databases and update the aux database, then rebuild both lists in response to `metadata_refreshed` (as after a runner panel closes) |
 | `populate_lists` | Read `ModsConfig.xml` and rebuild both mod lists, including error and warning checks |
-| `search_typing` | Type `vanilla` into the inactive search box one key at a time, then clear it |
+| `search_typing` | Type `vanilla` into the inactive search box one key at a time, waiting for each keystroke's debounce to fire, then clear it. Includes the 75 ms debounce per keystroke |
 | `move_mods` | Select `--move` inactive mods and press Return to move them to the active list |
 | `select_mods` | Select 40 inactive mods one after another, as when holding the down arrow key, updating the mod info panel each time |
 | `sort` | Sort the active list (dependency dialog off) |

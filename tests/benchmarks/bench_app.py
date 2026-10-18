@@ -200,11 +200,19 @@ class _Bench:
         self.drain_events()
 
     def search(self) -> None:
-        search_box = self.main_content.mods_panel.inactive_mods_search
+        """Type the pattern one key at a time, letting each debounce fire."""
+        from PySide6.QtTest import QTest
+
+        from app.views.mods_panel import SEARCH_DEBOUNCE_MS
+
+        panel = self.main_content.mods_panel
         for length in range(1, len(SEARCH_PATTERN) + 1):
-            search_box.setText(SEARCH_PATTERN[:length])
+            panel.inactive_mods_search.setText(SEARCH_PATTERN[:length])
+            QTest.qWait(SEARCH_DEBOUNCE_MS + 5)
+            while panel._search_timers["Inactive"].isActive():
+                QTest.qWait(5)
             self.drain_events()
-        search_box.clear()
+        panel.inactive_mods_search.clear()
         self.drain_events()
 
     def move(self) -> None:

@@ -4202,6 +4202,10 @@ class ModListWidget(QListWidget):
         )
 
 
+# Wait this long after the last keystroke before filtering the mod lists
+SEARCH_DEBOUNCE_MS = 75
+
+
 class ModsPanel(QWidget):
     """
     This class controls the layout and functionality for the
@@ -4271,6 +4275,15 @@ class ModsPanel(QWidget):
         logger.debug("Initializing ModsPanel")
         self.metadata_controller = metadata_controller
         self.settings = settings
+
+        # Per-list debounce so typing fast does not filter on every keystroke
+        self._search_timers: dict[str, QTimer] = {}
+        for list_type in ("Active", "Inactive"):
+            timer = QTimer(self)
+            timer.setSingleShot(True)
+            timer.setInterval(SEARCH_DEBOUNCE_MS)
+            timer.timeout.connect(partial(self._run_debounced_search, list_type))
+            self._search_timers[list_type] = timer
 
         # Load inactive mods sort settings
         if self.settings.save_inactive_mods_sort_state:
@@ -4969,10 +4982,16 @@ class ModsPanel(QWidget):
         self.mod_list_updated(count=count, list_type="Active")
 
     def on_active_mods_search(self, pattern: str) -> None:
-        self.signal_search_and_filters(
-            list_type="Active",
-            pattern=pattern,
+        self._search_timers["Active"].start()
+
+    def _run_debounced_search(self, list_type: str) -> None:
+        """Filter a list with the text now in its search box."""
+        search_box = (
+            self.active_mods_search
+            if list_type == "Active"
+            else self.inactive_mods_search
         )
+        self.signal_search_and_filters(list_type=list_type, pattern=search_box.text())
 
     def on_active_mods_search_clear(self) -> None:
         self.signal_clear_search(
@@ -4986,10 +5005,7 @@ class ModsPanel(QWidget):
         self.mod_list_updated(count=count, list_type="Inactive")
 
     def on_inactive_mods_search(self, pattern: str) -> None:
-        self.signal_search_and_filters(
-            list_type="Inactive",
-            pattern=pattern,
-        )
+        self._search_timers["Inactive"].start()
 
     def on_inactive_mods_search_clear(self) -> None:
         self.signal_clear_search(
@@ -5151,19 +5167,16 @@ class ModsPanel(QWidget):
         list_type: str,
     ) -> None:
         if list_type == "Active":
-            self.active_mods_search.clear()
-            self.signal_search_and_filters(
-                list_type=list_type,
-                pattern="",
-            )
-            self.active_mods_search.clearFocus()
+            search_box = self.active_mods_search
         elif list_type == "Inactive":
-            self.inactive_mods_search.clear()
-            self.signal_search_and_filters(
-                list_type=list_type,
-                pattern="",
-            )
-            self.inactive_mods_search.clearFocus()
+            search_box = self.inactive_mods_search
+        else:
+            return
+        search_box.clear()
+        # Clearing fires textChanged; filter now instead of after the debounce
+        self._search_timers[list_type].stop()
+        self.signal_search_and_filters(list_type=list_type, pattern="")
+        search_box.clearFocus()
 
     def search_mod_notes(self, pattern: str, limit: int = 5000) -> set[str]:
         """Searches mod notes using fuzzy search, returning mod paths matching search pattern."""
