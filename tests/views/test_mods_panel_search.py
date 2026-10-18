@@ -141,3 +141,47 @@ def test_clearing_search_filters_immediately_and_cancels_pending(
     qtbot.wait(SEARCH_DEBOUNCE_MS * 2)  # type: ignore[attr-defined]
     assert run_filter.call_count == 1
     assert panel.active_mods_search.text() == ""
+
+
+def _bare_panel_with_alternatives(
+    qtbot: object, alternatives: list[str | None]
+) -> ModsPanel:
+    metadata = MagicMock()
+    metadata.mods_metadata = {}
+    panel = ModsPanel(Settings(), metadata)
+    qtbot.addWidget(panel)  # type: ignore[attr-defined]
+    for mod_list in (panel.active_mods_list, panel.inactive_mods_list):
+        mod_list.check_widgets_visible = MagicMock()  # type: ignore[method-assign]
+    for index, alternative in enumerate(alternatives):
+        data = _add_mod_item(panel, "Inactive", f"/mods/{index}").data(
+            Qt.ItemDataRole.UserRole
+        )
+        data.alternative = alternative
+        data.errors_warnings = data.errors = data.warnings = ""
+        data.warning_toggled = data.mismatch = data.hidden_by_filter = False
+    return panel
+
+
+def test_use_this_instead_button_reports_replacement_count(qtbot: object) -> None:
+    panel = _bare_panel_with_alternatives(qtbot, ["Better Mod (1)", None, "Other (2)"])
+    panel.settings.external_use_this_instead_metadata_source = "Configured URL"
+
+    panel.update_use_this_instead_button()
+
+    assert panel.use_this_instead_button.isEnabled()
+    assert panel.use_this_instead_button.text() == "Replacements available (2)"
+
+
+def test_use_this_instead_button_is_disabled_without_matches_or_database(
+    qtbot: object,
+) -> None:
+    panel = _bare_panel_with_alternatives(qtbot, [None, None])
+    panel.settings.external_use_this_instead_metadata_source = "Configured URL"
+    panel.update_use_this_instead_button()
+    assert not panel.use_this_instead_button.isEnabled()
+    assert panel.use_this_instead_button.text() == "No replacements available"
+
+    panel.settings.external_use_this_instead_metadata_source = "None"
+    panel.update_use_this_instead_button()
+    assert not panel.use_this_instead_button.isEnabled()
+    assert "not configured" in panel.use_this_instead_button.text()

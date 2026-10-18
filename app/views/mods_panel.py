@@ -5157,6 +5157,52 @@ class ModsPanel(QWidget):
             # For Inactive list: only update internal state, no display updates
             self.inactive_mods_list.check_widgets_visible()
             self.inactive_mods_list.recalculate_internal_errors_warnings()
+        self.update_use_this_instead_button()
+
+    def update_use_this_instead_button(self) -> None:
+        """Label the Use This Instead button with the current replacement count.
+
+        The per-mod replacement lookup already runs with every error/warning
+        recalculation, so the button can say whether there is anything to do
+        instead of answering with a popup after a click.
+        """
+        button = self.use_this_instead_button
+        if self.settings.external_use_this_instead_metadata_source == "None":
+            button.setEnabled(False)
+            button.setText(self.tr('"Use This Instead" database not configured'))
+            button.setToolTip(
+                self.tr(
+                    'Configure the "Use This Instead" database in Settings to get '
+                    "replacement suggestions for outdated mods."
+                )
+            )
+            return
+        count = sum(
+            1
+            for mod_list in (self.active_mods_list, self.inactive_mods_list)
+            for item in mod_list.get_all_mod_list_items()
+            if getattr(item.data(Qt.ItemDataRole.UserRole), "alternative", None)
+        )
+        if count:
+            button.setEnabled(True)
+            button.setText(
+                self.tr("Replacements available ({count})").format(count=count)
+            )
+            button.setToolTip(
+                self.tr(
+                    "{count} of your mods have a newer replacement listed in the "
+                    '"Use This Instead" database. Click to review them.'
+                ).format(count=count)
+            )
+        else:
+            button.setEnabled(False)
+            button.setText(self.tr("No replacements available"))
+            button.setToolTip(
+                self.tr(
+                    'None of your mods have a replacement listed in the "Use This '
+                    'Instead" database.'
+                )
+            )
 
     def signal_clear_search(
         self,

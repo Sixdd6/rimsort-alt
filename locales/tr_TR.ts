@@ -3710,6 +3710,30 @@ An alternative updated mod is recommended:
         <translation>{padding}{count} güncellendi</translation>
     </message>
     <message>
+        <source>&quot;Use This Instead&quot; database not configured</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Configure the &quot;Use This Instead&quot; database in Settings to get replacement suggestions for outdated mods.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Replacements available ({count})</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>{count} of your mods have a newer replacement listed in the &quot;Use This Instead&quot; database. Click to review them.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>No replacements available</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>None of your mods have a replacement listed in the &quot;Use This Instead&quot; database.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Database not available</source>
         <translation>Veritabanı mevcut değil</translation>
     </message>
