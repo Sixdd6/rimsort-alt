@@ -4,7 +4,7 @@ from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QEvent, Qt
 from PySide6.QtGui import QImage, QPainter
 
 from app.models.metadata.metadata_structure import AboutXmlMod
@@ -366,12 +366,65 @@ def test_delegate_paints_without_a_focus_frame(panel: UpdateLog) -> None:
     assert seen and not (seen[0].state & QStyle.StateFlag.State_HasFocus)
 
 
-def test_name_tooltip_embeds_the_full_preview(panel: UpdateLog, tmp_path: Path) -> None:
-    preview = write_png(tmp_path / "Preview.png", 16, 16)
-    tooltip = panel._name_tooltip({"preview": preview}, "pkg.1", "1", "/m/<a>")
-    assert "<img src=" in tooltip and preview.replace("\\", "/") in tooltip
-    assert "Package ID: pkg.1" in tooltip
-    assert "/m/&lt;a&gt;" in tooltip
+def test_preview_popup_sits_beside_the_cell_and_flips_when_cramped() -> None:
+    from PySide6.QtCore import QRect, QSize
 
-    plain = panel._name_tooltip(None, "", "7", "")
-    assert "<img" not in plain and "Published File ID: 7" in plain
+    from app.views.update_log import preview_popup_position
+
+    screen = QRect(0, 0, 1920, 1080)
+    cell = QRect(100, 500, 600, 80)
+    pos = preview_popup_position(cell, QSize(400, 300), screen)
+    assert pos.x() == cell.right() + 12
+    assert pos.y() == cell.center().y() - 150
+
+    cramped_cell = QRect(1400, 1000, 500, 80)
+    pos = preview_popup_position(cramped_cell, QSize(400, 300), screen)
+    assert pos.x() == 1400 - 12 - 400
+    assert pos.y() == 1080 - 300
+
+
+def _hover(view: Any, pos: Any) -> None:
+    """Deliver a mouse-move straight to the viewport, independent of the cursor."""
+    from PySide6.QtCore import QPointF
+    from PySide6.QtGui import QMouseEvent
+    from PySide6.QtWidgets import QApplication
+
+    event = QMouseEvent(
+        QEvent.Type.MouseMove,
+        QPointF(pos),
+        QPointF(pos),
+        QPointF(view.viewport().mapToGlobal(pos)),
+        Qt.MouseButton.NoButton,
+        Qt.MouseButton.NoButton,
+        Qt.KeyboardModifier.NoModifier,
+    )
+    QApplication.sendEvent(view.viewport(), event)
+
+
+def test_hovering_a_mod_shows_its_preview_beside_the_row(
+    qtbot: Any, mock_metadata_controller: MagicMock, tmp_path: Path
+) -> None:
+    from app.views.update_log import IDENTIFIERS_ROLE
+
+    mods, details = _many_mods_with_previews(tmp_path, count=3)
+    panel = _make_panel(qtbot, mock_metadata_controller, mods, details, [])
+    # Narrow enough that the popup fits to the right on the offscreen screen
+    panel.resize(600, 400)
+    _populate(qtbot, panel)
+    qtbot.wait(50)
+    view = panel.editor_table_view
+    name_index = panel.editor_model.index(1, ColumnIndex.NAME.value)
+    assert panel.editor_model.item(1, 1).data(IDENTIFIERS_ROLE)[1].endswith(": 0")
+
+    _hover(view, view.visualRect(name_index).center())
+    qtbot.waitUntil(lambda: panel._preview_popup.isVisible(), timeout=3000)
+    qtbot.waitUntil(
+        lambda: panel._preview_popup.image.pixmap().width() == 32, timeout=3000
+    )
+    assert "Published File ID: 0" in panel._preview_popup.text.text()
+    cell_right = view.viewport().mapToGlobal(view.visualRect(name_index).topRight())
+    assert panel._preview_popup.x() > cell_right.x()
+
+    group_index = panel.editor_model.index(0, ColumnIndex.NAME.value)
+    _hover(view, view.visualRect(group_index).center())
+    qtbot.waitUntil(lambda: not panel._preview_popup.isVisible(), timeout=3000)

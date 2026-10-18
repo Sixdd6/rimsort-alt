@@ -9,7 +9,6 @@ active and which have a newer version waiting on the Workshop.
 
 from __future__ import annotations
 
-import html
 import time
 from dataclasses import dataclass
 from enum import Enum
@@ -20,17 +19,19 @@ from PySide6.QtCore import (
     QAbstractItemModel,
     QEvent,
     QModelIndex,
+    QObject,
     QPersistentModelIndex,
+    QPoint,
     QRect,
     QSize,
     Qt,
     QTimer,
-    QUrl,
 )
 from PySide6.QtGui import (
     QColor,
     QFont,
     QFontMetrics,
+    QHideEvent,
     QImage,
     QMouseEvent,
     QPainter,
@@ -41,7 +42,9 @@ from PySide6.QtGui import (
     QStandardItem,
 )
 from PySide6.QtWidgets import (
+    QApplication,
     QComboBox,
+    QFrame,
     QHBoxLayout,
     QHeaderView,
     QLabel,
@@ -50,6 +53,7 @@ from PySide6.QtWidgets import (
     QStyle,
     QStyledItemDelegate,
     QStyleOptionViewItem,
+    QVBoxLayout,
 )
 
 from app.controllers.metadata_controller import MetadataController
@@ -66,8 +70,11 @@ STATUS_COLUMN = ColumnIndex.WORKSHOP_PAGE.value + 1
 THUMBNAIL_WIDTH = 128
 THUMBNAIL_HEIGHT = 72
 ROW_HEIGHT = 80
-# Width of the full preview shown in the name cell's tooltip
-TOOLTIP_PREVIEW_WIDTH = 400
+# Width of the full preview shown in the hover popup
+PREVIEW_POPUP_WIDTH = 400
+# Gap between the hovered Mod cell and the preview popup
+_PREVIEW_POPUP_GAP = 12
+_PREVIEW_HOVER_DELAY_MS = 250
 GROUP_ROW_HEIGHT = 30
 _CELL_PADDING = 6
 # Rows past the viewport edge that also get thumbnails, so scrolling stays smooth
@@ -79,6 +86,7 @@ TIMESTAMP_ROLE = Qt.ItemDataRole.UserRole + 2  # epoch of the installed version
 ACTIVE_ROLE = Qt.ItemDataRole.UserRole + 3  # mod is in the active list
 UPDATE_AVAILABLE_ROLE = Qt.ItemDataRole.UserRole + 4  # newer version on Workshop
 THUMBNAIL_PATH_ROLE = Qt.ItemDataRole.UserRole + 5  # preview image to load lazily
+IDENTIFIERS_ROLE = Qt.ItemDataRole.UserRole + 6  # lines shown in the hover popup
 
 
 class UpdateBucket(Enum):
@@ -181,6 +189,55 @@ def extract_update_entries(
     return entries
 
 
+def preview_popup_position(cell: QRect, size: QSize, screen: QRect) -> QPoint:
+    """Place a popup beside a hovered cell, never under the pointer.
+
+    The popup goes to the right of the cell, centred on its row, and flips to
+    the left when there is no room; it is then clamped to the screen.
+
+    :param cell: The hovered cell in global coordinates.
+    :param size: Size of the popup.
+    :param screen: Available geometry of the screen showing the cell.
+    :return: Top-left corner for the popup, in global coordinates.
+    """
+    x = cell.right() + _PREVIEW_POPUP_GAP
+    if x + size.width() > screen.left() + screen.width():
+        x = cell.left() - _PREVIEW_POPUP_GAP - size.width()
+    x = max(screen.left(), x)
+    y = cell.center().y() - size.height() // 2
+    y = max(screen.top(), min(y, screen.top() + screen.height() - size.height()))
+    return QPoint(x, y)
+
+
+class _PreviewPopup(QFrame):
+    """Frameless tooltip-style window showing a mod's preview and identifiers."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            None, Qt.WindowType.ToolTip | Qt.WindowType.WindowDoesNotAcceptFocus
+        )
+        self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
+        self.setFrameShape(QFrame.Shape.Box)
+        self.setAutoFillBackground(True)
+        self.setBackgroundRole(QPalette.ColorRole.ToolTipBase)
+        self.setForegroundRole(QPalette.ColorRole.ToolTipText)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(6, 6, 6, 6)
+        self.image = QLabel()
+        self.image.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.text = QLabel()
+        self.text.setTextFormat(Qt.TextFormat.PlainText)
+        layout.addWidget(self.image)
+        layout.addWidget(self.text)
+
+    def set_content(self, pixmap: QPixmap | None, lines: list[str]) -> None:
+        self.image.setVisible(pixmap is not None)
+        if pixmap is not None:
+            self.image.setPixmap(pixmap)
+        self.text.setText("\n".join(lines))
+        self.adjustSize()
+
+
 class UpdateLog(BaseModsPanel):
     """
     Update Log tab: every installed Workshop mod, newest update first, grouped
@@ -250,6 +307,17 @@ class UpdateLog(BaseModsPanel):
         self._thumbnail_timer = QTimer()
         self._thumbnail_timer.setSingleShot(True)
         self._thumbnail_timer.timeout.connect(self._request_visible_thumbnails)
+        # Hover preview: latest-wins decoding at popup size, shown beside the row
+        self._preview_loader = PreviewImageLoader(
+            cache_size=64, max_side=PREVIEW_POPUP_WIDTH, cancel_pending=True
+        )
+        self._preview_loader.image_ready.connect(self._on_preview_ready)
+        self._preview_popup = _PreviewPopup()
+        self._hover_row = -1
+        self._hover_timer = QTimer()
+        self._hover_timer.setSingleShot(True)
+        self._hover_timer.setInterval(_PREVIEW_HOVER_DELAY_MS)
+        self._hover_timer.timeout.connect(self._show_preview_popup)
 
         super().__init__(
             object_name="UpdateLog",
@@ -277,8 +345,10 @@ class UpdateLog(BaseModsPanel):
         self._setup_columns()
         self.editor_table_view.setItemDelegate(UpdateLogDelegate(self))
         self.editor_table_view.verticalScrollBar().valueChanged.connect(
-            lambda _value: self._thumbnail_timer.start(0)
+            self._on_scrolled
         )
+        self.editor_table_view.setMouseTracking(True)
+        self.editor_table_view.viewport().installEventFilter(self)
         EventBus().refresh_finished.connect(self._populate_from_metadata)
 
     # ------------------------------------------------------------------ setup
@@ -393,6 +463,7 @@ class UpdateLog(BaseModsPanel):
         for rows in grouped.values():
             rows.sort(key=lambda row: row[1] or 0, reverse=True)
 
+        self._hide_preview_popup()
         self.editor_table_view.setUpdatesEnabled(False)
         try:
             self._clear_table_model()
@@ -460,7 +531,9 @@ class UpdateLog(BaseModsPanel):
         name_item.setData(timestamp, TIMESTAMP_ROLE)
         name_item.setData(active, ACTIVE_ROLE)
         name_item.setData(entry.update_available, UPDATE_AVAILABLE_ROLE)
-        name_item.setToolTip(self._name_tooltip(metadata, package_id, pfid, path))
+        name_item.setData(
+            self._identifier_lines(package_id, pfid, path), IDENTIFIERS_ROLE
+        )
 
         updated_item = QStandardItem(
             get_relative_time(timestamp) if timestamp else self.tr("Unknown")
@@ -514,25 +587,91 @@ class UpdateLog(BaseModsPanel):
             if item is not None and item.isCheckable():
                 item.setCheckState(state)
 
-    def _name_tooltip(
-        self, metadata: dict[str, Any] | None, package_id: str, pfid: str, path: str
-    ) -> str:
-        """Rich-text tooltip: the full preview image above the mod's identifiers."""
+    def _identifier_lines(self, package_id: str, pfid: str, path: str) -> list[str]:
         lines = [
             self.tr("Package ID: {package_id}").format(package_id=package_id),
             self.tr("Published File ID: {pfid}").format(pfid=pfid),
         ]
         if path:
             lines.append(self.tr("Path: {path}").format(path=path))
-        body = "<br>".join(html.escape(line) for line in lines)
-        preview = metadata["preview"] if metadata else ""
-        if preview:
-            src = QUrl.fromLocalFile(preview).toString()
-            return (
-                f"<p><img src='{html.escape(src)}' width='{TOOLTIP_PREVIEW_WIDTH}'>"
-                f"</p><p>{body}</p>"
-            )
-        return f"<p>{body}</p>"
+        return lines
+
+    # ---------------------------------------------------------- hover preview
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:
+        # BaseModsPanel installs this filter before the table exists
+        view = getattr(self, "editor_table_view", None)
+        if view is not None and watched is view.viewport():
+            if event.type() == QEvent.Type.MouseMove and isinstance(event, QMouseEvent):
+                self._on_hover(view.indexAt(event.position().toPoint()))
+            elif event.type() == QEvent.Type.Leave:
+                self._hide_preview_popup()
+        return super().eventFilter(watched, event)
+
+    def _on_hover(self, index: QModelIndex) -> None:
+        """Arm the preview popup for the Mod cell under the pointer."""
+        name_item = (
+            self.editor_model.item(index.row(), ColumnIndex.NAME.value)
+            if index.isValid() and index.column() == ColumnIndex.NAME.value
+            else None
+        )
+        if name_item is None or name_item.data(GROUP_ROLE):
+            self._hide_preview_popup()
+            return
+        if index.row() == self._hover_row:
+            return
+        self._hover_row = index.row()
+        if self._preview_popup.isVisible():
+            self._show_preview_popup()
+        else:
+            self._hover_timer.start()
+
+    def _show_preview_popup(self) -> None:
+        name_item = self.editor_model.item(self._hover_row, ColumnIndex.NAME.value)
+        if name_item is None or not self.isVisible():
+            return
+        preview = name_item.data(THUMBNAIL_PATH_ROLE)
+        image = self._preview_loader.load(preview) if preview else None
+        if preview and image is None:
+            # Decoding; _on_preview_ready places the popup when it lands
+            return
+        self._place_preview_popup(name_item, image)
+
+    def _on_preview_ready(self, preview: str, image: QImage) -> None:
+        name_item = self.editor_model.item(self._hover_row, ColumnIndex.NAME.value)
+        if name_item is not None and name_item.data(THUMBNAIL_PATH_ROLE) == preview:
+            self._place_preview_popup(name_item, image)
+
+    def _place_preview_popup(
+        self, name_item: QStandardItem, image: QImage | None
+    ) -> None:
+        pixmap = (
+            QPixmap.fromImage(image)
+            if image is not None and not image.isNull()
+            else None
+        )
+        self._preview_popup.set_content(pixmap, name_item.data(IDENTIFIERS_ROLE) or [])
+        view = self.editor_table_view
+        cell = view.visualRect(name_item.index())
+        cell.moveTopLeft(view.viewport().mapToGlobal(cell.topLeft()))
+        screen = QApplication.screenAt(cell.center()) or QApplication.primaryScreen()
+        available = screen.availableGeometry() if screen else cell
+        self._preview_popup.move(
+            preview_popup_position(cell, self._preview_popup.size(), available)
+        )
+        self._preview_popup.show()
+
+    def _hide_preview_popup(self) -> None:
+        self._hover_timer.stop()
+        self._hover_row = -1
+        self._preview_popup.hide()
+
+    def _on_scrolled(self, _value: int) -> None:
+        self._hide_preview_popup()
+        self._thumbnail_timer.start(0)
+
+    def hideEvent(self, event: QHideEvent) -> None:
+        self._hide_preview_popup()
+        super().hideEvent(event)
 
     def _get_mods_for_pfids(self, pfids: set[str]) -> dict[str, dict[str, Any]]:
         """Describe the installed mods behind a set of published file IDs.
@@ -920,10 +1059,12 @@ class UpdateLogDelegate(QStyledItemDelegate):
 
 
 __all__ = [
+    "IDENTIFIERS_ROLE",
     "UpdateBucket",
     "UpdateEntry",
     "UpdateLog",
     "UpdateLogDelegate",
     "bucket_for",
     "extract_update_entries",
+    "preview_popup_position",
 ]
