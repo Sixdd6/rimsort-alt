@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QImage
+from PySide6.QtGui import QImage, QPainter
 
 from app.models.metadata.metadata_structure import AboutXmlMod
 from app.views.update_log import (
@@ -340,3 +340,27 @@ def test_mods_for_pfids_uses_one_bulk_aux_lookup(
     assert aux_db.get_many.call_args.args[1] == ["/m/a"]
     assert result["1"]["external_time_updated"] == 42
     assert "9" not in result
+
+
+def test_delegate_paints_without_a_focus_frame(panel: UpdateLog) -> None:
+    from PySide6.QtGui import QPixmap
+    from PySide6.QtWidgets import QStyle, QStyledItemDelegate, QStyleOptionViewItem
+
+    delegate = panel.editor_table_view.itemDelegate()
+    seen: list[QStyleOptionViewItem] = []
+    original = QStyledItemDelegate.paint
+
+    def spy(self: Any, painter: Any, option: QStyleOptionViewItem, index: Any) -> None:
+        seen.append(QStyleOptionViewItem(option))
+        original(self, painter, option, index)
+
+    option = QStyleOptionViewItem()
+    option.state = QStyle.StateFlag.State_HasFocus | QStyle.StateFlag.State_Enabled
+    option.rect = panel.editor_table_view.visualRect(panel.editor_model.index(1, 0))
+    pixmap = QPixmap(60, 60)
+    painter = QPainter(pixmap)
+    with patch.object(QStyledItemDelegate, "paint", spy):
+        delegate.paint(painter, option, panel.editor_model.index(1, 0))
+    painter.end()
+
+    assert seen and not (seen[0].state & QStyle.StateFlag.State_HasFocus)

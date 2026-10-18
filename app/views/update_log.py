@@ -45,6 +45,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QPushButton,
+    QStyle,
     QStyledItemDelegate,
     QStyleOptionViewItem,
 )
@@ -746,6 +747,10 @@ class UpdateLogDelegate(QStyledItemDelegate):
         option: QStyleOptionViewItem,
         index: QModelIndex | QPersistentModelIndex,
     ) -> None:
+        # Clicking a row makes a cell "current"; the style would frame it, which
+        # on the narrow check column shows as a tall outlined bar
+        option = QStyleOptionViewItem(option)
+        option.state = option.state & ~QStyle.StateFlag.State_HasFocus
         name_index = index.sibling(index.row(), ColumnIndex.NAME.value)
         if name_index.data(GROUP_ROLE):
             # The row is one spanned cell starting at column 0
