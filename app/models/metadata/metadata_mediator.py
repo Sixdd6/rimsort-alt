@@ -49,6 +49,8 @@ class MetadataMediator:
         self._user_rules: ExternalRulesSchema | None = None
         self._community_rules: ExternalRulesSchema | None = None
         self._steam_db: SteamDbSchema | None = None
+        # (path, mtime_ns, size) of the Steam DB file behind self._steam_db
+        self._steam_db_file_version: tuple[Path, int, int] | None = None
         self._mods_metadata: dict[str, ListedMod] | None = None
         self._game_version: str = "Unknown"
         self._no_version_warning: list[str] | None = None
@@ -172,6 +174,31 @@ class MetadataMediator:
             logger.error(f"Failed to load Use This Instead DB: {e}")
             self._use_this_instead = None
 
+    def _read_steam_db_if_changed(self) -> SteamDbSchema | None:
+        """Decode the Steam DB, reusing the last result while its file is unchanged."""
+        if self.steam_db_path is None:
+            self._steam_db_file_version = None
+            return None
+        try:
+            stat = self.steam_db_path.stat()
+            version = (self.steam_db_path, stat.st_mtime_ns, stat.st_size)
+        except OSError:
+            version = None
+        if (
+            version is not None
+            and version == self._steam_db_file_version
+            and self._steam_db is not None
+        ):
+            logger.info("SteamDB unchanged since the last refresh, reusing it")
+            return self._steam_db
+        steam_db = read_steam_db(self.steam_db_path)
+        self._steam_db_file_version = version if steam_db is not None else None
+        return steam_db
+
+    def invalidate_steam_db_cache(self) -> None:
+        """Make the next refresh re-read the Steam DB from disk."""
+        self._steam_db_file_version = None
+
     def refresh_metadata(
         self,
         prefer_versioned: bool = True,
@@ -214,11 +241,7 @@ class MetadataMediator:
             if self.community_rules_path is not None
             else None
         )
-        self._steam_db = (
-            read_steam_db(self.steam_db_path)
-            if self.steam_db_path is not None
-            else None
-        )
+        self._steam_db = self._read_steam_db_if_changed()
 
         # Load additional external metadata
         self._load_no_version_warning()

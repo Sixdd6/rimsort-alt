@@ -904,7 +904,7 @@ def read_steam_db(path: Path) -> SteamDbSchema | None:
             "DB exists!",
         )
         try:
-            with open(path, encoding="utf-8") as f:
+            with open(path, "rb") as f:
                 json_string = f.read()
                 logger.info("Reading info from SteamDB")
                 steam_db = msgspec.json.decode(json_string, type=SteamDbSchema)

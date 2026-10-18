@@ -701,6 +701,23 @@ def test_set_steam_db_blacklist_persists_to_disk(
     assert raw["version"] >= expected_min
 
 
+def test_set_steam_db_blacklist_failed_persist_reloads_db_next_refresh(
+    metadata_controller_with_steamdb: MetadataController,
+) -> None:
+    """A failed save leaves memory ahead of disk, so the next refresh rereads it."""
+    mc = metadata_controller_with_steamdb
+    mc.refresh_metadata()
+    pfid = "basic_mod4-multiversion-singleauthor-nodependencies"
+
+    with patch.object(mc, "_persist_steam_db", return_value=False):
+        assert mc.set_steam_db_blacklist(pfid, blacklisted=True, comment="x") is False
+    mc.refresh_metadata()
+
+    steam_db = mc.metadata_mediator.steam_db
+    assert steam_db is not None
+    assert not steam_db.database[pfid].blacklist.value
+
+
 def test_process_creation_adds_mod_to_metadata(
     metadata_controller: MetadataController, tmp_path: Path
 ) -> None:

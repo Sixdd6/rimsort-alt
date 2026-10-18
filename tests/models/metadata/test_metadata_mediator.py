@@ -1,10 +1,14 @@
 import json
+import shutil
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
 from app.models.metadata.metadata_mediator import MetadataMediator
 from app.models.metadata.metadata_structure import AboutXmlMod
+
+_MEDIATOR = "app.models.metadata.metadata_mediator"
 
 
 @pytest.fixture
@@ -158,3 +162,55 @@ def test_mediator_loads_use_this_instead(tmp_path: Path) -> None:
     entry = mediator.use_this_instead["111111"]
     assert entry["newName"] == "New Mod"
     assert entry["newPackageId"] == "new.mod.b"
+
+
+@pytest.fixture
+def steam_db_mediator(tmp_path: Path) -> MetadataMediator:
+    steam_db_path = tmp_path / "steamDB.json"
+    shutil.copy(Path("tests/data/dbs/steamDB.json"), steam_db_path)
+    return MetadataMediator(
+        user_rules_path=Path("tests/data/dbs/userRules.json"),
+        community_rules_path=None,
+        steam_db_path=steam_db_path,
+        workshop_mods_path=None,
+        local_mods_path=Path("tests/data/mod_examples/Local"),
+        game_path=Path("tests/data/mod_examples/RimWorld"),
+    )
+
+
+def test_unchanged_steam_db_is_reused_across_refreshes(
+    steam_db_mediator: MetadataMediator,
+) -> None:
+    steam_db_mediator.refresh_metadata()
+    first = steam_db_mediator.steam_db
+    assert first is not None
+
+    with patch(f"{_MEDIATOR}.read_steam_db") as read_steam_db:
+        steam_db_mediator.refresh_metadata()
+
+    read_steam_db.assert_not_called()
+    assert steam_db_mediator.steam_db is first
+
+
+def test_changed_steam_db_is_reloaded(steam_db_mediator: MetadataMediator) -> None:
+    steam_db_mediator.refresh_metadata()
+    first = steam_db_mediator.steam_db
+    assert steam_db_mediator.steam_db_path is not None
+    with open(steam_db_mediator.steam_db_path, "a", encoding="utf-8") as handle:
+        handle.write("\n")
+
+    steam_db_mediator.refresh_metadata()
+
+    assert steam_db_mediator.steam_db is not None
+    assert steam_db_mediator.steam_db is not first
+
+
+def test_invalidated_steam_db_is_reloaded(steam_db_mediator: MetadataMediator) -> None:
+    steam_db_mediator.refresh_metadata()
+    first = steam_db_mediator.steam_db
+
+    steam_db_mediator.invalidate_steam_db_cache()
+    steam_db_mediator.refresh_metadata()
+
+    assert steam_db_mediator.steam_db is not None
+    assert steam_db_mediator.steam_db is not first

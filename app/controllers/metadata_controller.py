@@ -747,6 +747,9 @@ class MetadataController(QObject):
         result = self._persist_steam_db()
         if result:
             self.steam_db_updated.emit()
+        else:
+            # The in-memory DB now differs from the file; reload it next refresh
+            self.metadata_mediator.invalidate_steam_db_cache()
         return result
 
     # ---- Private helpers ----
