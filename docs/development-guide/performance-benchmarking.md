@@ -46,6 +46,8 @@ Synthetic mods give repeatable numbers at any scale but do not have real-world q
 - `--synthetic N` generates `N` mods with dependencies, load order rules, versioned folders and assemblies (`tests/benchmarks/mod_corpus.py`). The same `--seed` always produces the same mods.
 - `--dbs-dir` copies a RimSort `dbs` folder so the Steam Workshop database and community rules load too. On Linux this is `~/.local/share/RimSort/dbs`.
 
+`--history N` saves once, then copies that snapshot so the mod list history holds `N` snapshots, like an install that has reached the default retention of 100.
+
 `--active N` picks `N` installed mods, spread evenly by package ID, and writes them to the benchmark's `ModsConfig.xml`, after the official content.
 
 ## Running it

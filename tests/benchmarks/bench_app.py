@@ -49,6 +49,12 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument(
         "--move", type=int, default=25, help="Number of mods to move per move run"
     )
+    parser.add_argument(
+        "--history",
+        type=int,
+        default=0,
+        help="Pre-fill the mod list history with this many snapshots",
+    )
     parser.add_argument("--repeat", type=int, default=3, help="Runs per scenario")
     parser.add_argument("--seed", type=int, default=1, help="Synthetic corpus seed")
     parser.add_argument(
@@ -230,6 +236,15 @@ class _Bench:
             gif_path=str(gif), target=lambda: None
         )
 
+    def fill_history(self, count: int) -> None:
+        """Save once, then copy that snapshot so the history holds ``count``."""
+        self.save()
+        history_dir = self.main_content._modlist_history_service.history_dir()
+        newest = max(history_dir.glob("*.json"), key=lambda path: path.name)
+        for index in range(count - 1):
+            older = f"2000-01-01T00-00-00.{index:06d}__{newest.stem.split('__')[-1]}"
+            shutil.copyfile(newest, history_dir / f"{older}.json")
+
     def save(self) -> None:
         self.main_content._do_save()
         self.drain_events()
@@ -288,6 +303,8 @@ def main(argv: list[str] | None = None) -> int:
     bench.metadata_controller.refresh_metadata()
     bench.write_mods_config()
     bench.populate()
+    if args.history:
+        bench.fill_history(args.history)
 
     mod_count = len(bench.metadata_controller.mods_metadata)
     active_count = bench.main_content.mods_panel.active_mods_list.count()
