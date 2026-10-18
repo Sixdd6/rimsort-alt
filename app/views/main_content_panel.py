@@ -1131,7 +1131,9 @@ class MainContent(QObject):
                 active_mod_paths.add(str(mod_entry.mod_path))
 
         # Get the current order of active mods list and create a copy for comparison
-        current_order = active_mods
+        current_order = [
+            u for u in self.mods_panel.active_mods_list.paths if not is_divider_uuid(u)
+        ]
         try:
             sorter = Sorter(
                 self.settings.sorting_algorithm,
@@ -1186,12 +1188,13 @@ class MainContent(QObject):
             # Disable widgets while inserting
             self.disable_enable_widgets_signal.emit(False)
             # Insert data into lists
+            new_order_set = set(new_order)
             self._insert_data_into_lists(
                 new_order,
                 [
                     uuid
                     for uuid in self.metadata_controller.mods_metadata
-                    if uuid not in set(new_order)
+                    if uuid not in new_order_set
                 ],
             )
             # Enable widgets again after inserting

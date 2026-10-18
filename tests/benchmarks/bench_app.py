@@ -295,6 +295,9 @@ def main(argv: list[str] | None = None) -> int:
         "sort": _time_scenario(
             "sort", bench.sort, args.repeat, args.profile, reset=bench.populate
         ),
+        "sort_again": _time_scenario(
+            "sort_again", bench.sort, args.repeat, args.profile
+        ),
         "dependency_check": _time_scenario(
             "dependency_check", bench.dependency_check, args.repeat, args.profile
         ),
