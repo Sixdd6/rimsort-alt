@@ -5159,6 +5159,36 @@ class ModsPanel(QWidget):
             self.inactive_mods_list.recalculate_internal_errors_warnings()
         self.update_use_this_instead_button()
 
+    def _pending_replacement_count(self) -> int:
+        """Mods whose suggested replacement still needs the user's attention.
+
+        An active original always counts. An inactive original counts only
+        while its replacement is not installed; once it is, the swap has been
+        done (or the user chose the replacement themselves) and there is
+        nothing left to do but optional clean-up.
+        """
+        installed_pfids = {
+            mod.published_file_id
+            for mod in self.metadata_controller.mods_metadata.values()
+            if mod.published_file_id
+        }
+        count = 0
+        for mod_list, is_active in (
+            (self.active_mods_list, True),
+            (self.inactive_mods_list, False),
+        ):
+            for item in mod_list.get_all_mod_list_items():
+                data = item.data(Qt.ItemDataRole.UserRole)
+                if not getattr(data, "alternative", None):
+                    continue
+                if is_active:
+                    count += 1
+                    continue
+                replacement = self.metadata_controller.has_alternative_mod(data.path)
+                if replacement is None or replacement.pfid not in installed_pfids:
+                    count += 1
+        return count
+
     def update_use_this_instead_button(self) -> None:
         """Label the Use This Instead button with the current replacement count.
 
@@ -5177,12 +5207,7 @@ class ModsPanel(QWidget):
                 )
             )
             return
-        count = sum(
-            1
-            for mod_list in (self.active_mods_list, self.inactive_mods_list)
-            for item in mod_list.get_all_mod_list_items()
-            if getattr(item.data(Qt.ItemDataRole.UserRole), "alternative", None)
-        )
+        count = self._pending_replacement_count()
         if count:
             button.setEnabled(True)
             button.setText(

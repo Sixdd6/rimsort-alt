@@ -185,3 +185,33 @@ def test_use_this_instead_button_is_disabled_without_matches_or_database(
     panel.update_use_this_instead_button()
     assert not panel.use_this_instead_button.isEnabled()
     assert "not configured" in panel.use_this_instead_button.text()
+
+
+def test_use_this_instead_button_ignores_replaced_inactive_originals(
+    qtbot: object,
+) -> None:
+    from app.models.metadata.metadata_structure import ReplacementInfo
+
+    panel = _bare_panel_with_alternatives(qtbot, ["New Mod (9)", "Other (8)"])
+    panel.settings.external_use_this_instead_metadata_source = "Configured URL"
+    installed = MagicMock()
+    installed.published_file_id = "9"
+    metadata: MagicMock = panel.metadata_controller  # type: ignore[assignment]
+    metadata.mods_metadata = {"/mods/new": installed}
+    replacements = {
+        "/mods/0": ReplacementInfo("New Mod", "a", "pkg", "9", []),
+        "/mods/1": ReplacementInfo("Other", "a", "pkg", "8", []),
+    }
+    metadata.has_alternative_mod.side_effect = replacements.get
+
+    panel.update_use_this_instead_button()
+
+    # /mods/0 is inactive and its replacement (9) is installed: already handled
+    assert panel.use_this_instead_button.text() == "Replacements available (1)"
+
+    # The same original counts again once it is active
+    panel.active_mods_list.paths = ["/mods/0"]
+    item = panel.inactive_mods_list.takeItem(0)
+    panel.active_mods_list.addItem(item)
+    panel.update_use_this_instead_button()
+    assert panel.use_this_instead_button.text() == "Replacements available (2)"
