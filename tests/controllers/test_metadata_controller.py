@@ -880,6 +880,30 @@ def test_get_mods_from_list_steam_suffix_priority(
     assert missing == []
 
 
+def test_get_mods_from_list_steam_entry_matches_both_ids_in_metadata_order(
+    metadata_controller: MetadataController,
+) -> None:
+    """A ``_steam`` entry matches mods with and without the suffix, in metadata order."""
+    mod_plain = _make_about_xml_mod(
+        "Plain", "author.other", ModType.LOCAL, "/mods/a_plain"
+    )
+    mod_suffixed = _make_about_xml_mod(
+        "Suffixed", "author.other_steam", ModType.LOCAL, "/mods/b_suffixed"
+    )
+    metadata_controller.metadata_mediator._mods_metadata = {
+        "/mods/b_suffixed": mod_suffixed,
+        "/mods/a_plain": mod_plain,
+    }
+
+    active, inactive, _duplicates, missing = metadata_controller.get_mods_from_list(
+        ["author.other_steam"]
+    )
+
+    assert active == ["/mods/b_suffixed", "/mods/a_plain"]
+    assert inactive == []
+    assert missing == []
+
+
 def test_get_mods_from_list_git_duplicate_prefers_git_over_workshop(
     metadata_controller: MetadataController,
 ) -> None:

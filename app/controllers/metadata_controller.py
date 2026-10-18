@@ -509,18 +509,22 @@ class MetadataController(QObject):
         active_mod_paths: list[str] = []
         inactive_mod_paths: list[str] = []
         duplicate_mods: dict[str, list[str]] = {}
-        duplicates_processed: list[str] = []
+        duplicates_processed: set[str] = set()
         missing_mods: list[str] = []
         populated_mods: list[str] = []
         to_populate: list[str] = []
 
         logger.debug("Started generating active and inactive mods")
 
+        # Paths per package ID, in metadata order
+        paths_by_package_id: dict[str, list[str]] = {}
+        path_order: dict[str, int] = {}
         for path, mod_data in all_mods.items():
             if isinstance(mod_data, AboutXmlMod):
                 pid = str(mod_data.package_id)
-                duplicate_mods.setdefault(pid, []).append(path)
-        duplicate_mods = {k: v for k, v in duplicate_mods.items() if len(v) > 1}
+                paths_by_package_id.setdefault(pid, []).append(path)
+                path_order[path] = len(path_order)
+        duplicate_mods = {k: v for k, v in paths_by_package_id.items() if len(v) > 1}
 
         if isinstance(mod_list, str):
             if not os.path.exists(mod_list):
@@ -553,51 +557,54 @@ class MetadataController(QObject):
             sources_order = (
                 SOURCE_PRIORITY_STEAM if is_steam else SOURCE_PRIORITY_DEFAULT
             )
-            for path, mod in all_mods.items():
-                if not isinstance(mod, AboutXmlMod):
-                    continue
-                metadata_package_id = str(mod.package_id)
-                if metadata_package_id in [
-                    package_id_normalized,
-                    package_id_normalized_stripped,
-                ]:
-                    if target_id not in duplicate_mods:
-                        populated_mods.append(target_id)
-                        active_mod_paths.append(path)
-                    else:
-                        if target_id in duplicates_processed:
-                            continue
-                        logger.info(
-                            f"Found duplicate mod present in active mods list: {target_id}"
+            matching_mod_paths = paths_by_package_id.get(package_id_normalized, [])
+            if package_id_normalized_stripped != package_id_normalized:
+                matching_mod_paths = sorted(
+                    matching_mod_paths
+                    + paths_by_package_id.get(package_id_normalized_stripped, []),
+                    key=path_order.__getitem__,
+                )
+            for path in matching_mod_paths:
+                if target_id not in duplicate_mods:
+                    populated_mods.append(target_id)
+                    active_mod_paths.append(path)
+                else:
+                    if target_id in duplicates_processed:
+                        continue
+                    logger.info(
+                        f"Found duplicate mod present in active mods list: {target_id}"
+                    )
+                    for source_type in sources_order:
+                        logger.debug(
+                            f"Checking for duplicate with source: {source_type.value}"
                         )
-                        for source_type in sources_order:
+                        matching_paths: list[str] = []
+                        for dup_path in duplicate_mods[target_id]:
+                            dup_mod = all_mods.get(dup_path)
+                            if (
+                                isinstance(dup_mod, AboutXmlMod)
+                                and dup_mod.mod_type == source_type
+                            ):
+                                matching_paths.append(dup_path)
+                        source_paths_sorted = natsorted(matching_paths)
+                        if source_paths_sorted:
+                            calculated_dup = source_paths_sorted[0]
                             logger.debug(
-                                f"Checking for duplicate with source: {source_type.value}"
+                                f"Using duplicate {source_type.value} mod for {target_id}: {calculated_dup}"
                             )
-                            matching_paths: list[str] = []
-                            for dup_path in duplicate_mods[target_id]:
-                                dup_mod = all_mods.get(dup_path)
-                                if (
-                                    isinstance(dup_mod, AboutXmlMod)
-                                    and dup_mod.mod_type == source_type
-                                ):
-                                    matching_paths.append(dup_path)
-                            source_paths_sorted = natsorted(matching_paths)
-                            if source_paths_sorted:
-                                calculated_dup = source_paths_sorted[0]
-                                logger.debug(
-                                    f"Using duplicate {source_type.value} mod for {target_id}: {calculated_dup}"
-                                )
-                                populated_mods.append(target_id)
-                                duplicates_processed.append(target_id)
-                                active_mod_paths.append(calculated_dup)
-                                break
+                            populated_mods.append(target_id)
+                            duplicates_processed.add(target_id)
+                            active_mod_paths.append(calculated_dup)
+                            break
 
         missing_mods = list(set(to_populate) - set(populated_mods))
         logger.debug(f"Generated active mods with {len(active_mod_paths)} mods")
 
         logger.info("Generating inactive mod list")
-        inactive_mod_paths = [path for path in all_mods if path not in active_mod_paths]
+        active_mod_paths_set = set(active_mod_paths)
+        inactive_mod_paths = [
+            path for path in all_mods if path not in active_mod_paths_set
+        ]
         logger.info(f"# active mods: {len(active_mod_paths)}")
         logger.info(f"# inactive mods: {len(inactive_mod_paths)}")
         logger.info(f"# duplicate mods: {len(duplicate_mods)}")
