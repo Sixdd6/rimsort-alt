@@ -173,6 +173,23 @@ def test_metadata_controller_get_metadata_with_path(
     assert aux_metadata.acf_time_touched > 0
 
 
+def test_refresh_falls_back_to_per_mod_aux_entries(
+    metadata_controller_p: MetadataController,
+) -> None:
+    """If the bulk aux lookup fails, refresh still stores each mod's entry."""
+    with patch.object(
+        AuxMetadataController, "get_or_create_many", side_effect=RuntimeError("boom")
+    ):
+        metadata_controller_p.refresh_metadata()
+
+    _mod, aux_metadata = metadata_controller_p.get_metadata_with_path(
+        Path("tests/data/mod_examples/Steam/steam_mod_1")
+    )
+    assert aux_metadata is not None
+    assert aux_metadata.type == "ModType.STEAM_WORKSHOP"
+    assert aux_metadata.published_file_id == "123456789"
+
+
 @pytest.fixture
 def metadata_controller_with_steamdb(
     metadata_controller_p: MetadataController,

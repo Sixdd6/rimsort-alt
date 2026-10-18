@@ -123,9 +123,20 @@ class MetadataController(QObject):
         )
 
         with self.metadata_db_controller.Session() as session:
-            for path, mod_data in self.metadata_mediator.mods_metadata.items():
+            mods_metadata = self.metadata_mediator.mods_metadata
+            try:
+                entries = self.metadata_db_controller.get_or_create_many(
+                    session, mods_metadata
+                )
+            except Exception:
+                session.rollback()
+                logger.exception("Failed to bulk load aux metadata entries")
+                entries = {}
+            for path, mod_data in mods_metadata.items():
                 try:
-                    entry = self.metadata_db_controller.get_or_create(session, path)
+                    entry = entries.get(path)
+                    if entry is None:
+                        entry = self.metadata_db_controller.get_or_create(session, path)
                     entry.type = str(mod_data.mod_type)
                     entry.published_file_id = mod_data.published_file_id
                 except Exception:
