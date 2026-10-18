@@ -56,6 +56,9 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
         type=Path,
         help="Reuse this folder for synthetic mods and dev data (default: temp)",
     )
+    parser.add_argument(
+        "--only", help="Comma-separated scenario names to run (default: all)"
+    )
     parser.add_argument("--json", type=Path, help="Write results to this JSON file")
     parser.add_argument(
         "--compare", type=Path, help="Baseline JSON file to compare results with"
@@ -71,6 +74,12 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
 
 def _prepare_environment(work_dir: Path) -> None:
     """Point AppInfo at an isolated dev folder; must run before importing app."""
+    # AppInfo derives the application folder (themes, locales) from the
+    # __main__ script, expecting app/__main__.py as with `python -m app`.
+    main_module = sys.modules["__main__"]
+    main_module.__file__ = str(
+        Path(__file__).resolve().parents[2] / "app" / "__main__.py"
+    )
     os.environ["RIMSORT_DEV"] = "1"
     os.environ["RIMSORT_DEV_DIR"] = str(work_dir / "dev")
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -212,6 +221,15 @@ class _Bench:
         active = set(self.main_content.mods_panel.active_mods_list.paths)
         build_dependencies_dialog_context(self.metadata_controller, active)
 
+    def loading_overhead(self) -> None:
+        """Run a no-op task behind the loading animation used by refresh."""
+        from app.utils.app_info import AppInfo
+
+        gif = AppInfo().theme_data_folder / "default-icons" / "rimsort.gif"
+        self.main_content.do_threaded_loading_animation(
+            gif_path=str(gif), target=lambda: None
+        )
+
     def save(self) -> None:
         self.main_content._do_save()
         self.drain_events()
@@ -276,32 +294,22 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Work dir: {work_dir}")
     print(f"Mods: {mod_count} total, {active_count} active, {args.repeat} runs each")
 
+    scenarios: list[tuple[str, Callable[[], None], Callable[[], None] | None]] = [
+        ("refresh_metadata", bench.metadata_controller.refresh_metadata, None),
+        ("populate_lists", bench.populate, None),
+        ("search_typing", bench.search, None),
+        ("move_mods", bench.move, bench.populate),
+        ("sort", bench.sort, bench.populate),
+        ("sort_again", bench.sort, None),
+        ("dependency_check", bench.dependency_check, None),
+        ("save", bench.save, None),
+        ("loading_overhead", bench.loading_overhead, None),
+    ]
+    only = set(args.only.split(",")) if args.only else None
     results: dict[str, Any] = {
-        "refresh_metadata": _time_scenario(
-            "refresh_metadata",
-            bench.metadata_controller.refresh_metadata,
-            args.repeat,
-            args.profile,
-        ),
-        "populate_lists": _time_scenario(
-            "populate_lists", bench.populate, args.repeat, args.profile
-        ),
-        "search_typing": _time_scenario(
-            "search_typing", bench.search, args.repeat, args.profile
-        ),
-        "move_mods": _time_scenario(
-            "move_mods", bench.move, args.repeat, args.profile, reset=bench.populate
-        ),
-        "sort": _time_scenario(
-            "sort", bench.sort, args.repeat, args.profile, reset=bench.populate
-        ),
-        "sort_again": _time_scenario(
-            "sort_again", bench.sort, args.repeat, args.profile
-        ),
-        "dependency_check": _time_scenario(
-            "dependency_check", bench.dependency_check, args.repeat, args.profile
-        ),
-        "save": _time_scenario("save", bench.save, args.repeat, args.profile),
+        name: _time_scenario(name, run, args.repeat, args.profile, reset=reset)
+        for name, run, reset in scenarios
+        if only is None or name in only
     }
     bench.shutdown()
     if bench.blocked_dialogs:

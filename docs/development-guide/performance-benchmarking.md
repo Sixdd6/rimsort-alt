@@ -33,6 +33,7 @@ The benchmark (`tests/benchmarks/bench_app.py`) builds the real `MainContent` pa
 | `sort_again` | Sort the already sorted active list again |
 | `dependency_check` | Build the missing-dependency report used before sorting |
 | `save` | Write `ModsConfig.xml`, settings and a mod list history snapshot |
+| `loading_overhead` | Run a no-op task behind the loading animation that refresh uses, measuring only the animation's own delay |
 
 All writes go to the work directory. Real game and Workshop folders are only read, and the databases folder is copied, not used in place.
 
@@ -71,6 +72,8 @@ On Linux, run `ulimit -c 1` in the shell first. If the benchmark crashes, no cor
 3. Include both sets of numbers in the pull request, along with the mod counts the benchmark prints.
 
 Timings move around by a few percent between runs. Use `--repeat 5` or more when the change is small.
+
+`--only` runs a subset, for example `--only sort,save`. `sort_again` measures sorting an already sorted list, so run it together with `sort`.
 
 ## Profiling
 
