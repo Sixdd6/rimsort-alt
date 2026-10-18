@@ -23,6 +23,7 @@ from app.models.metadata.metadata_structure import (
 )
 from app.utils.button_factory import ButtonConfig, ButtonType
 from app.utils.mod_info import ModInfo
+from app.utils.workshop_previews import WorkshopPreviewCache
 from app.views.mod_table import (
     ACTIVE_COLOR,
     ACTIVE_ROLE,
@@ -194,6 +195,10 @@ class UseThisInsteadPanel(BaseModsPanel):
         self._thumbnails = ModTableThumbnails(
             self, self.editor_table_view, self.editor_model
         )
+        # Previews of replacements that are not installed come from the Workshop
+        self._workshop_previews = WorkshopPreviewCache(parent=self)
+        self._workshop_previews.preview_ready.connect(self._on_workshop_preview)
+        self._uninstalled_rows: dict[str, list[int]] = {}
 
     # ------------------------------------------------------------------ setup
     def _initialize_ui_elements(self) -> None:
@@ -275,6 +280,7 @@ class UseThisInsteadPanel(BaseModsPanel):
             self.editor_table_view.clearSpans()
             self._original_rows = {}
             self._replacement_rows = {}
+            self._uninstalled_rows = {}
             for group_index, group in enumerate(self._groups):
                 add_group_row(
                     self.editor_model,
@@ -292,6 +298,17 @@ class UseThisInsteadPanel(BaseModsPanel):
                 self._replacement_rows[self.editor_model.rowCount() - 1] = group_index
         finally:
             self.editor_table_view.setUpdatesEnabled(True)
+        self._thumbnails.schedule()
+        self._workshop_previews.fetch(list(self._uninstalled_rows))
+
+    def _on_workshop_preview(self, pfid: str, path: str) -> None:
+        """Attach a downloaded Workshop preview to the rows waiting for it."""
+        for row in self._uninstalled_rows.pop(pfid, []):
+            name_item = self.editor_model.item(row, ColumnIndex.NAME.value)
+            if name_item is None:
+                continue
+            name_item.setData(path, THUMBNAIL_PATH_ROLE)
+            self._thumbnails.register_row(path, row)
         self._thumbnails.schedule()
 
     def _add_original_row(self, path: str) -> None:
@@ -349,7 +366,9 @@ class UseThisInsteadPanel(BaseModsPanel):
                 else ""
             )
         else:
-            name, authors, path, preview = replacement.name, replacement.author, "", ""
+            name, authors, path = replacement.name, replacement.author, ""
+            cached = self._workshop_previews.cached_path(replacement.pfid)
+            preview = str(cached) if cached else ""
             versions = ModInfo._parse_supported_versions_static(
                 replacement.supportedversions
             )
@@ -408,6 +427,8 @@ class UseThisInsteadPanel(BaseModsPanel):
         )
         if preview:
             self._thumbnails.register_row(preview, row)
+        elif not key and pfid:
+            self._uninstalled_rows.setdefault(pfid, []).append(row)
 
     # ---------------------------------------------------------------- replace
     def _selected_group_indices(self) -> set[int]:

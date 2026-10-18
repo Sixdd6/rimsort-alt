@@ -14,9 +14,7 @@ from app.models.settings import Settings
 from app.utils.app_info import AppInfo
 from app.utils.rentry.wrapper import RentryUpload
 from app.utils.schema import generate_rimworld_mods_list
-from app.utils.steam.webapi.wrapper import (
-    ISteamRemoteStorage_GetPublishedFileDetails,
-)
+from app.utils.workshop_previews import fetch_workshop_preview_urls
 from app.utils.xml import json_to_xml_write
 
 from .mod_list_parser import (
@@ -106,21 +104,7 @@ class ImportExportService:
         :param pfids: list of PublishedFileId strings
         :return: dict mapping pfid -> preview_url
         """
-        pfid_to_preview_url: dict[str, str] = {}
-        if not pfids:
-            return pfid_to_preview_url
-
-        webapi_response, _, _ = ISteamRemoteStorage_GetPublishedFileDetails(pfids)
-        if webapi_response:
-            for metadata_entry in webapi_response:
-                pfid = metadata_entry["publishedfileid"]
-                if metadata_entry["result"] != 1:
-                    logger.warning(
-                        f"Rentry.co export: Unable to get data for mod {pfid}"
-                    )
-                else:
-                    pfid_to_preview_url[pfid] = metadata_entry["preview_url"]
-        return pfid_to_preview_url
+        return fetch_workshop_preview_urls(pfids)
 
     def export_to_xml(self, active_mods: list[str], file_path: str) -> None:
         """Write mod list to ModsConfig.xml format.

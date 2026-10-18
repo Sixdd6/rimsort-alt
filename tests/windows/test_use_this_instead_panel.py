@@ -1,11 +1,12 @@
+from pathlib import Path
 from typing import Any
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from PySide6.QtCore import Qt
 
 from app.models.metadata.metadata_structure import ReplacementInfo
-from app.views.mod_table import GROUP_ROLE, STATUS_COLUMN
+from app.views.mod_table import GROUP_ROLE, STATUS_COLUMN, THUMBNAIL_PATH_ROLE
 from app.windows.base_mods_panel import ColumnIndex
 from app.windows.use_this_instead_panel import (
     ReplacementRequest,
@@ -140,3 +141,33 @@ def test_replace_selected_with_nothing_checked_does_nothing(
     panel._replace_selected()
     assert received == []
     assert panel.isVisible()
+
+
+def test_uninstalled_replacement_gets_a_workshop_preview(
+    qtbot: Any,
+    world: dict[str, Any],
+    mock_metadata_controller: MagicMock,
+    tmp_path: Path,
+) -> None:
+    from tests.image_fixtures import write_png
+
+    preview = write_png(tmp_path / "8.png", 32, 32)
+    with patch("app.windows.use_this_instead_panel.WorkshopPreviewCache") as cache_cls:
+        cache = cache_cls.return_value
+        cache.cached_path.return_value = None
+        panel = UseThisInsteadPanel(
+            mod_metadata=world, metadata_controller=mock_metadata_controller
+        )
+        qtbot.addWidget(panel)
+        assert panel.show_if_has_alternatives()
+
+    cache.fetch.assert_called_once_with(["8"])
+    name_item = panel.editor_model.item(6, ColumnIndex.NAME.value)
+    assert name_item.data(THUMBNAIL_PATH_ROLE) is None
+
+    panel._on_workshop_preview("8", preview)
+
+    assert name_item.data(THUMBNAIL_PATH_ROLE) == preview
+    qtbot.waitUntil(
+        lambda: name_item.data(Qt.ItemDataRole.DecorationRole) is not None, timeout=5000
+    )
