@@ -364,3 +364,14 @@ def test_delegate_paints_without_a_focus_frame(panel: UpdateLog) -> None:
     painter.end()
 
     assert seen and not (seen[0].state & QStyle.StateFlag.State_HasFocus)
+
+
+def test_name_tooltip_embeds_the_full_preview(panel: UpdateLog, tmp_path: Path) -> None:
+    preview = write_png(tmp_path / "Preview.png", 16, 16)
+    tooltip = panel._name_tooltip({"preview": preview}, "pkg.1", "1", "/m/<a>")
+    assert "<img src=" in tooltip and preview.replace("\\", "/") in tooltip
+    assert "Package ID: pkg.1" in tooltip
+    assert "/m/&lt;a&gt;" in tooltip
+
+    plain = panel._name_tooltip(None, "", "7", "")
+    assert "<img" not in plain and "Published File ID: 7" in plain

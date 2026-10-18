@@ -9,6 +9,7 @@ active and which have a newer version waiting on the Workshop.
 
 from __future__ import annotations
 
+import html
 import time
 from dataclasses import dataclass
 from enum import Enum
@@ -24,6 +25,7 @@ from PySide6.QtCore import (
     QSize,
     Qt,
     QTimer,
+    QUrl,
 )
 from PySide6.QtGui import (
     QColor,
@@ -60,8 +62,12 @@ from app.utils.preview_image_loader import PreviewImageLoader
 from app.windows.base_mods_panel import BaseModsPanel, ColumnIndex, HeaderColumn
 
 STATUS_COLUMN = ColumnIndex.WORKSHOP_PAGE.value + 1
-THUMBNAIL_SIZE = 48
-ROW_HEIGHT = 56
+# Workshop previews are mostly 16:9, so the thumbnail box is landscape
+THUMBNAIL_WIDTH = 128
+THUMBNAIL_HEIGHT = 72
+ROW_HEIGHT = 80
+# Width of the full preview shown in the name cell's tooltip
+TOOLTIP_PREVIEW_WIDTH = 400
 GROUP_ROW_HEIGHT = 30
 _CELL_PADDING = 6
 # Rows past the viewport edge that also get thumbnails, so scrolling stays smooth
@@ -238,7 +244,7 @@ class UpdateLog(BaseModsPanel):
         # Rows waiting for a thumbnail, keyed by preview image path
         self._thumbnail_rows: dict[str, list[int]] = {}
         self._thumbnail_loader = PreviewImageLoader(
-            cache_size=1024, max_side=THUMBNAIL_SIZE * 2, cancel_pending=False
+            cache_size=1024, max_side=THUMBNAIL_WIDTH * 2, cancel_pending=False
         )
         self._thumbnail_loader.image_ready.connect(self._on_thumbnail_ready)
         self._thumbnail_timer = QTimer()
@@ -454,17 +460,7 @@ class UpdateLog(BaseModsPanel):
         name_item.setData(timestamp, TIMESTAMP_ROLE)
         name_item.setData(active, ACTIVE_ROLE)
         name_item.setData(entry.update_available, UPDATE_AVAILABLE_ROLE)
-        name_item.setToolTip(
-            "\n".join(
-                line
-                for line in (
-                    self.tr("Package ID: {package_id}").format(package_id=package_id),
-                    self.tr("Published File ID: {pfid}").format(pfid=pfid),
-                    self.tr("Path: {path}").format(path=path) if path else "",
-                )
-                if line
-            )
-        )
+        name_item.setToolTip(self._name_tooltip(metadata, package_id, pfid, path))
 
         updated_item = QStandardItem(
             get_relative_time(timestamp) if timestamp else self.tr("Unknown")
@@ -517,6 +513,26 @@ class UpdateLog(BaseModsPanel):
             item = self.editor_model.item(row, ColumnIndex.CHECKBOX.value)
             if item is not None and item.isCheckable():
                 item.setCheckState(state)
+
+    def _name_tooltip(
+        self, metadata: dict[str, Any] | None, package_id: str, pfid: str, path: str
+    ) -> str:
+        """Rich-text tooltip: the full preview image above the mod's identifiers."""
+        lines = [
+            self.tr("Package ID: {package_id}").format(package_id=package_id),
+            self.tr("Published File ID: {pfid}").format(pfid=pfid),
+        ]
+        if path:
+            lines.append(self.tr("Path: {path}").format(path=path))
+        body = "<br>".join(html.escape(line) for line in lines)
+        preview = metadata["preview"] if metadata else ""
+        if preview:
+            src = QUrl.fromLocalFile(preview).toString()
+            return (
+                f"<p><img src='{html.escape(src)}' width='{TOOLTIP_PREVIEW_WIDTH}'>"
+                f"</p><p>{body}</p>"
+            )
+        return f"<p>{body}</p>"
 
     def _get_mods_for_pfids(self, pfids: set[str]) -> dict[str, dict[str, Any]]:
         """Describe the installed mods behind a set of published file IDs.
@@ -651,8 +667,8 @@ class UpdateLog(BaseModsPanel):
             name_item.setData("", THUMBNAIL_PATH_ROLE)
             return
         pixmap = QPixmap.fromImage(image).scaled(
-            THUMBNAIL_SIZE,
-            THUMBNAIL_SIZE,
+            THUMBNAIL_WIDTH,
+            THUMBNAIL_HEIGHT,
             Qt.AspectRatioMode.KeepAspectRatio,
             Qt.TransformationMode.SmoothTransformation,
         )
@@ -801,9 +817,9 @@ class UpdateLogDelegate(QStyledItemDelegate):
         rect = option.rect.adjusted(_CELL_PADDING, 0, -_CELL_PADDING, 0)
         thumb_box = QRect(
             rect.left(),
-            rect.top() + (rect.height() - THUMBNAIL_SIZE) // 2,
-            THUMBNAIL_SIZE,
-            THUMBNAIL_SIZE,
+            rect.top() + (rect.height() - THUMBNAIL_HEIGHT) // 2,
+            THUMBNAIL_WIDTH,
+            THUMBNAIL_HEIGHT,
         )
         pixmap = index.data(Qt.ItemDataRole.DecorationRole)
         if isinstance(pixmap, QPixmap) and not pixmap.isNull():
@@ -813,7 +829,7 @@ class UpdateLogDelegate(QStyledItemDelegate):
         else:
             placeholder = option.palette.color(QPalette.ColorRole.AlternateBase)
             painter.fillRect(thumb_box, placeholder)
-        text_rect = rect.adjusted(THUMBNAIL_SIZE + _CELL_PADDING * 2, 0, 0, 0)
+        text_rect = rect.adjusted(THUMBNAIL_WIDTH + _CELL_PADDING * 2, 0, 0, 0)
         half = text_rect.height() // 2
         name_rect = QRect(text_rect.left(), text_rect.top(), text_rect.width(), half)
         author_rect = QRect(
