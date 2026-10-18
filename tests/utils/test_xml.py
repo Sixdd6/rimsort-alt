@@ -1,6 +1,7 @@
 import gzip
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 import zstandard as zstd
@@ -87,6 +88,14 @@ class TestXmlPathToJson:
         xml_file.write_text('<?xml version="1.0"?><root><name>Test</name></root>')
         result = xml_path_to_json(str(xml_file))
         assert result == {"root": {"name": "Test"}}
+
+    def test_plain_xml_file_is_opened_once(self, tmp_path: Path) -> None:
+        xml_file = tmp_path / "test.xml"
+        xml_file.write_text("<root><name>Test</name></root>")
+        with patch("app.utils.xml.open", create=True, wraps=open) as tracked_open:
+            result = xml_path_to_json(str(xml_file))
+        assert result == {"root": {"name": "Test"}}
+        assert tracked_open.call_count == 1
 
     def test_nonexistent_file_returns_empty(self, tmp_path: Path) -> None:
         result = xml_path_to_json(str(tmp_path / "missing.xml"))

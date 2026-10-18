@@ -1,6 +1,7 @@
 import gzip
 import os
 import xml.etree.ElementTree as ET
+from contextlib import ExitStack
 from typing import Any
 from xml.dom import minidom
 
@@ -244,6 +245,10 @@ def fast_rimworld_xml_save_validation(path: str) -> bool:
     return False
 
 
+_GZIP_MAGIC = b"\x1f\x8b"
+_ZSTD_MAGIC = b"\x28\xb5\x2f\xfd"
+
+
 def using_gzip(fp: str) -> bool:
     """
     RimKeeper compatibility. Check if dealing with gzip save file
@@ -253,7 +258,7 @@ def using_gzip(fp: str) -> bool:
     """
     try:
         with open(fp, "rb") as f:
-            return f.read(2) == b"\x1f\x8b"
+            return f.read(2) == _GZIP_MAGIC
     except Exception as e:
         logger.error(f"Failed checking if save file is using gzip: {e}")
         return False
@@ -268,7 +273,7 @@ def using_zstd(fp: str) -> bool:
     """
     try:
         with open(fp, "rb") as f:
-            return f.read(4) == b"\x28\xb5\x2f\xfd"
+            return f.read(4) == _ZSTD_MAGIC
     except Exception as e:
         logger.error(f"Failed checking if save file is using zstd: {e}")
         return False
@@ -284,9 +289,15 @@ def __open_file_maybe_compressed(path: str) -> Any:
     :param path: Path to the save file.
     :return: File object for the opened save file.
     """
-    if using_gzip(path):
-        return gzip.open(path, "rb")
-    elif using_zstd(path):
-        return zstd.open(path, "rb")
-    else:
-        return open(path, "rb")
+    # Sniff the magic bytes on the same handle so plain files are opened once
+    with ExitStack() as stack:
+        f = stack.enter_context(open(path, "rb"))
+        magic = f.read(4)
+        if magic.startswith(_GZIP_MAGIC):
+            return gzip.open(path, "rb")
+        if magic == _ZSTD_MAGIC:
+            return zstd.open(path, "rb")
+        f.seek(0)
+        # Keep the plain file open for the caller
+        stack.pop_all()
+        return f
