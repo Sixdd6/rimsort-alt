@@ -347,7 +347,11 @@ def test_delegate_paints_without_a_focus_frame(panel: UpdateLog) -> None:
         original(self, painter, option, index)
 
     option = QStyleOptionViewItem()
-    option.state = QStyle.StateFlag.State_HasFocus | QStyle.StateFlag.State_Enabled
+    option.state = (
+        QStyle.StateFlag.State_HasFocus
+        | QStyle.StateFlag.State_MouseOver
+        | QStyle.StateFlag.State_Enabled
+    )
     option.rect = panel.editor_table_view.visualRect(panel.editor_model.index(1, 0))
     pixmap = QPixmap(60, 60)
     painter = QPainter(pixmap)
@@ -355,7 +359,9 @@ def test_delegate_paints_without_a_focus_frame(panel: UpdateLog) -> None:
         delegate.paint(painter, option, panel.editor_model.index(1, 0))
     painter.end()
 
-    assert seen and not (seen[0].state & QStyle.StateFlag.State_HasFocus)
+    assert seen
+    assert not (seen[0].state & QStyle.StateFlag.State_HasFocus)
+    assert not (seen[0].state & QStyle.StateFlag.State_MouseOver)
 
 
 def test_preview_popup_sits_beside_the_cell_and_flips_when_cramped() -> None:
