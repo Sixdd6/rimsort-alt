@@ -19,7 +19,7 @@ from typing import Any, cast
 
 from loguru import logger
 from PySide6.QtCore import QModelIndex, QPersistentModelIndex, Qt, QTimer
-from PySide6.QtGui import QColor, QPainter, QStandardItem
+from PySide6.QtGui import QColor, QPainter, QShowEvent, QStandardItem
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -90,6 +90,8 @@ class AcfLogReader(BaseModsPanel):
         self.search_column_index = -1
         # Track if this is the first population (for initial sorting)
         self._is_first_population = True
+        # Set when metadata changed while hidden; the table is filled on show
+        self._populate_pending = False
 
         # Initialize BaseModsPanel with standard columns
         super().__init__(
@@ -354,6 +356,10 @@ class AcfLogReader(BaseModsPanel):
         Called automatically when EventBus().refresh_finished signal is emitted
         (triggered on app startup and after manual refresh).
         """
+        if not self.isVisible():
+            self._populate_pending = True
+            return
+        self._populate_pending = False
         logger.warning("Populating ACF Log Reader")
         overall_start = time.time()
         # Update active PFIDs from active mods list
@@ -419,6 +425,12 @@ class AcfLogReader(BaseModsPanel):
             self.editor_table_view.setUpdatesEnabled(True)
             self.editor_table_view.setSortingEnabled(True)
             raise
+
+    def showEvent(self, event: QShowEvent) -> None:
+        """Fill the table if metadata changed while the tab was hidden."""
+        super().showEvent(event)
+        if self._populate_pending:
+            self._populate_from_metadata()
 
     def _extract_acf_entries(
         self,
@@ -492,9 +504,19 @@ class AcfLogReader(BaseModsPanel):
         :return: Dictionary mapping PFID to (path, metadata_dict) tuple
         """
         pfid_to_mod: dict[str, tuple[str, dict[str, Any]]] = {}
-        for path, mod in self.metadata_controller.mods_metadata.items():
+        matching_mods = [
+            (path, mod)
+            for path, mod in self.metadata_controller.mods_metadata.items()
+            if mod.published_file_id and mod.published_file_id in acf_pfids
+        ]
+        aux_db_controller = self.metadata_controller.metadata_db_controller
+        with aux_db_controller.Session() as session:
+            aux_entries = aux_db_controller.get_many(
+                session, [path for path, _ in matching_mods]
+            )
+        for path, mod in matching_mods:
             pfid = mod.published_file_id
-            if pfid and pfid in acf_pfids:
+            if pfid:
                 # Convert ListedMod to dict for compatibility with _batch_add_acf_rows
                 metadata: dict[str, Any] = {
                     "name": mod.name,
@@ -510,7 +532,7 @@ class AcfLogReader(BaseModsPanel):
                     metadata["authors"] = ""
                     metadata["packageid"] = ""
                 # Get external timestamps from aux DB
-                _, aux_entry = self.metadata_controller.get_metadata_with_path(path)
+                aux_entry = aux_entries.get(path)
                 if aux_entry is not None:
                     metadata["external_time_updated"] = getattr(
                         aux_entry, "external_time_updated", None
