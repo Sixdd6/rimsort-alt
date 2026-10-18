@@ -7,12 +7,8 @@ import pytest
 from PySide6.QtCore import QEvent, Qt
 from PySide6.QtGui import QImage, QPainter
 
-from app.models.metadata.metadata_structure import AboutXmlMod
+from app.views.mod_table import GROUP_ROLE, GROUP_ROW_HEIGHT, ROW_HEIGHT, STATUS_COLUMN
 from app.views.update_log import (
-    GROUP_ROLE,
-    GROUP_ROW_HEIGHT,
-    ROW_HEIGHT,
-    STATUS_COLUMN,
     UpdateBucket,
     UpdateLog,
     bucket_for,
@@ -20,6 +16,7 @@ from app.views.update_log import (
 )
 from app.windows.base_mods_panel import ColumnIndex
 from tests.image_fixtures import write_png
+from tests.mod_fixtures import fake_about_mod
 
 DAY = 86400
 
@@ -79,16 +76,7 @@ def test_extract_update_entries_prefers_steamcmd_and_flags_pending_updates() -> 
     assert not entries["3"].update_available
 
 
-def _mod(name: str, pfid: str, path: str, preview: str = "") -> MagicMock:
-    mod = MagicMock(spec=AboutXmlMod)
-    mod.name = name
-    mod.published_file_id = pfid
-    mod.mod_path = Path(path)
-    mod.authors = ["Someone"]
-    mod.package_id = f"pkg.{pfid}"
-    mod.supported_versions = {"1.6"}
-    mod.preview_img_path = Path(preview) if preview else None
-    return mod
+_mod = fake_about_mod
 
 
 def _make_panel(
@@ -207,7 +195,7 @@ def test_clicking_the_workshop_cell_opens_the_page(
     view = panel.editor_table_view
     index = panel.editor_model.index(1, ColumnIndex.WORKSHOP_PAGE.value)
     assert index.data() == "https://steamcommunity.com/sharedfiles/filedetails/?id=1"
-    with patch("app.views.update_log.platform_specific_open") as opener:
+    with patch("app.views.mod_table.platform_specific_open") as opener:
         qtbot.mouseClick(
             view.viewport(),
             Qt.MouseButton.LeftButton,
@@ -280,13 +268,15 @@ def test_thumbnails_load_lazily_for_rows_near_the_viewport(
     mods, details = _many_mods_with_previews(tmp_path)
     panel = _make_panel(qtbot, mock_metadata_controller, mods, details, [])
     requested: list[str] = []
-    real_load = panel._thumbnail_loader.load
+    real_load = panel._thumbnails._thumbnail_loader.load
 
     def tracking_load(path: str) -> QImage | None:
         requested.append(path)
         return real_load(path)
 
-    with patch.object(panel._thumbnail_loader, "load", side_effect=tracking_load):
+    with patch.object(
+        panel._thumbnails._thumbnail_loader, "load", side_effect=tracking_load
+    ):
         _populate(qtbot, panel)
         qtbot.waitUntil(lambda: len(requested) > 0, timeout=3000)
         first_batch = len(requested)
@@ -317,7 +307,9 @@ def test_filtered_rows_get_thumbnails_even_when_far_apart(
     panel = _make_panel(qtbot, mock_metadata_controller, mods, details, [])
     _populate(qtbot, panel)
     requested: list[str] = []
-    with patch.object(panel._thumbnail_loader, "load", side_effect=requested.append):
+    with patch.object(
+        panel._thumbnails._thumbnail_loader, "load", side_effect=requested.append
+    ):
         # "Mod 70".."Mod 79": matches sit far down a table that scrolls
         panel.apply_search_filter("Mod 7")
         qtbot.waitUntil(lambda: len(requested) >= 10, timeout=3000)
@@ -369,7 +361,7 @@ def test_delegate_paints_without_a_focus_frame(panel: UpdateLog) -> None:
 def test_preview_popup_sits_beside_the_cell_and_flips_when_cramped() -> None:
     from PySide6.QtCore import QRect, QSize
 
-    from app.views.update_log import preview_popup_position
+    from app.views.mod_table import preview_popup_position
 
     screen = QRect(0, 0, 1920, 1080)
     cell = QRect(100, 500, 600, 80)
@@ -404,7 +396,7 @@ def _hover(view: Any, pos: Any) -> None:
 def test_hovering_a_mod_shows_its_preview_beside_the_row(
     qtbot: Any, mock_metadata_controller: MagicMock, tmp_path: Path
 ) -> None:
-    from app.views.update_log import IDENTIFIERS_ROLE
+    from app.views.mod_table import IDENTIFIERS_ROLE
 
     mods, details = _many_mods_with_previews(tmp_path, count=3)
     panel = _make_panel(qtbot, mock_metadata_controller, mods, details, [])
@@ -417,21 +409,21 @@ def test_hovering_a_mod_shows_its_preview_beside_the_row(
     assert panel.editor_model.item(1, 1).data(IDENTIFIERS_ROLE)[1].endswith(": 0")
 
     _hover(view, view.visualRect(name_index).center())
-    qtbot.waitUntil(lambda: panel._preview_popup.isVisible(), timeout=3000)
+    qtbot.waitUntil(lambda: panel._thumbnails.popup.isVisible(), timeout=3000)
     qtbot.waitUntil(
-        lambda: panel._preview_popup.image.pixmap().width() == 32, timeout=3000
+        lambda: panel._thumbnails.popup.image.pixmap().width() == 32, timeout=3000
     )
-    assert "Published File ID: 0" in panel._preview_popup.text.text()
+    assert "Published File ID: 0" in panel._thumbnails.popup.text.text()
     cell_right = view.viewport().mapToGlobal(view.visualRect(name_index).topRight())
-    assert panel._preview_popup.x() > cell_right.x()
+    assert panel._thumbnails.popup.x() > cell_right.x()
 
     group_index = panel.editor_model.index(0, ColumnIndex.NAME.value)
     _hover(view, view.visualRect(group_index).center())
-    qtbot.waitUntil(lambda: not panel._preview_popup.isVisible(), timeout=3000)
+    qtbot.waitUntil(lambda: not panel._thumbnails.popup.isVisible(), timeout=3000)
 
 
 def test_every_theme_styles_the_preview_popup(panel: UpdateLog) -> None:
-    assert panel._preview_popup.objectName() == "updateLogPreviewPopup"
+    assert panel._thumbnails.popup.objectName() == "updateLogPreviewPopup"
     themes = sorted(Path("themes").glob("*/style.qss"))
     assert themes
     for theme in themes:
