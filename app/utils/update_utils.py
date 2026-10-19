@@ -491,6 +491,22 @@ def rate_limit_reset_clock(response: Any) -> str:
         return ""
 
 
+class _ExtractionOutcome(QObject):
+    """Collects an extraction thread's result on the GUI thread."""
+
+    received = Signal()
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.success = False
+        self.error = ""
+
+    def record(self, success: bool, message: str) -> None:
+        self.success = success
+        self.error = message
+        self.received.emit()
+
+
 class _ProgressRelay(QObject):
     """Carries worker-thread progress to the GUI thread through a signal."""
 
@@ -1735,60 +1751,8 @@ class UpdateManager(QObject):
                 logger.error(f"ZIP validation failed: {error_msg}")
                 raise UpdateExtractionError(error_msg)
 
-            # Get ZIP contents
-            zip_contents = get_zip_contents(temp_zip_path)
-            extracted_files = len(zip_contents)
+            extracted_files = len(get_zip_contents(temp_zip_path))
             logger.info(f"ZIP contains {extracted_files} files")
-
-            # Create and display extraction progress widget
-            self._progress_widget = TaskProgressWindow(
-                title="Extracting Update",
-                show_message=True,
-                show_percent=True,
-            )
-            self._progress_widget.set_message("Extracting files...")
-
-            # Show progress widget in panel or as standalone window
-            if self.mod_info_panel:
-                self.mod_info_panel.info_panel_frame.hide()
-                self.mod_info_panel.panel.addWidget(self._progress_widget)
-                self._progress_widget.show()
-            else:
-                self._progress_widget.show()
-
-            # Create and run extraction thread
-            extraction_result: dict[str, Any] = {
-                "success": False,
-                "error": "",
-                # jscpd:ignore-start
-                "done": False,
-            }
-            loop = QEventLoop()
-
-            def on_extraction_progress(percent: int, message: str) -> None:
-                if self._progress_widget:
-                    self._progress_widget.update_progress(percent, message)
-
-            def on_extraction_finished(success: bool, message: str) -> None:
-                extraction_result["success"] = success
-                extraction_result["error"] = message
-                # jscpd:ignore-end
-                # jscpd:ignore-start
-                extraction_result["done"] = True
-                loop.quit()
-                try:
-                    if self._progress_widget:
-                        self._progress_widget.close()
-                        # Remove from panel if it was added there
-                        if self.mod_info_panel:
-                            self.mod_info_panel.panel.removeWidget(
-                                self._progress_widget
-                            )
-                            # Restore panel visibility
-                            # jscpd:ignore-end
-                            self.mod_info_panel.info_panel_frame.show()
-                except Exception as e:
-                    logger.debug(f"Error closing progress widget: {e}")
 
             extract_thread = ZipExtractThread(
                 zip_path=str(temp_zip_path),
@@ -1796,50 +1760,16 @@ class UpdateManager(QObject):
                 overwrite_all=True,
                 delete=True,
             )
-            self._connect_extraction_cancel(extract_thread)
-            extract_thread.progress.connect(on_extraction_progress)
-            extract_thread.finished.connect(on_extraction_finished)
-            extract_thread.start()
-
-            # Wait for extraction to complete without blocking event loop
-            loop.exec()
-
-            # Ensure thread is properly cleaned up before continuing
-            extract_thread.wait(EXTRACTION_THREAD_TIMEOUT_MS)
-            # jscpd:ignore-start
-            if extract_thread.isRunning():
-                logger.warning(
-                    "Extraction thread still running after timeout, forcing quit"
-                )
-                extract_thread.quit()
-                extract_thread.wait(2000)  # Final attempt to stop thread
-
-            if not extraction_result["success"]:
-                raise UpdateExtractionError(
-                    f"Extraction failed: {extraction_result['error']}"
-                )
-
-            logger.info(f"Extracted {extracted_files} files from ZIP")
-            return extracted_files
-
+            return self._run_extraction(extract_thread, extracted_files, "ZIP")
         except BadZipFile as e:
             raise UpdateExtractionError(f"Invalid ZIP file: {e}") from e
-        # jscpd:ignore-end
         finally:
-            # Clean up temporary ZIP file if it still exists
-            if temp_zip_path.exists():
-                try:
-                    temp_zip_path.unlink()
-                except Exception as e:
-                    logger.debug(f"Failed to clean up temp ZIP file: {e}")
+            self._remove_temp_archive(temp_zip_path)
 
     def _extract_tar_gz(self, content: bytes, temp_base: Path) -> int:
         """
         Extract tar.gz content to the temporary directory using
         TarExtractThread with UI progress.
-
-        Mirrors the QThread + QEventLoop pattern used by :meth:`_extract_zip`
-        so the UI stays responsive and extraction can be aborted.
 
         Args:
             content: tar.gz file content as bytes
@@ -1869,84 +1799,73 @@ class UpdateManager(QObject):
 
             logger.info(f"tar.gz contains {extracted_files} entries")
 
-            # Create and display extraction progress widget
-            self._progress_widget = TaskProgressWindow(
-                title="Extracting Update",
-                show_message=True,
-                show_percent=True,
-            )
-            self._progress_widget.set_message("Extracting files...")
-
-            # jscpd:ignore-start
-            if self.mod_info_panel:
-                self.mod_info_panel.info_panel_frame.hide()
-                self.mod_info_panel.panel.addWidget(self._progress_widget)
-                self._progress_widget.show()
-            else:
-                self._progress_widget.show()
-
-            # Create and run extraction thread
-            extraction_result: dict[str, Any] = {
-                "success": False,
-                "error": "",
-                # jscpd:ignore-end
-            }
-            loop = QEventLoop()
-
-            def on_extraction_progress(percent: int, message: str) -> None:
-                if self._progress_widget:
-                    self._progress_widget.update_progress(percent, message)
-
-            def on_extraction_finished(success: bool, message: str) -> None:
-                extraction_result["success"] = success
-                extraction_result["error"] = message
-                loop.quit()
-                try:
-                    if self._progress_widget:
-                        self._progress_widget.close()
-                        if self.mod_info_panel:
-                            self.mod_info_panel.panel.removeWidget(
-                                self._progress_widget
-                            )
-                            self.mod_info_panel.info_panel_frame.show()
-                except Exception as e:
-                    logger.debug(f"Error closing progress widget: {e}")
-
             extract_thread = TarExtractThread(
                 tar_path=str(temp_tar_path),
                 target_path=str(temp_base),
             )
-            self._connect_extraction_cancel(extract_thread)
-            extract_thread.progress.connect(on_extraction_progress)
-            extract_thread.finished.connect(on_extraction_finished)
-            extract_thread.start()
-
-            # Wait for extraction to complete without blocking event loop
-            loop.exec()
-
-            # Ensure thread is properly cleaned up before continuing
-            extract_thread.wait(EXTRACTION_THREAD_TIMEOUT_MS)
-            if extract_thread.isRunning():
-                logger.warning(
-                    "Extraction thread still running after timeout, forcing quit"
-                )
-                extract_thread.quit()
-                extract_thread.wait(2000)
-
-            if not extraction_result["success"]:
-                raise UpdateExtractionError(
-                    f"Extraction failed: {extraction_result['error']}"
-                )
-
-            logger.info(f"Extracted {extracted_files} entries from tar.gz")
-            return extracted_files
-
+            return self._run_extraction(extract_thread, extracted_files, "tar.gz")
         finally:
-            if temp_tar_path.exists():
-                try:
-                    temp_tar_path.unlink()
-                except Exception as e:
-                    logger.debug(f"Failed to clean up temp tar.gz file: {e}")
+            self._remove_temp_archive(temp_tar_path)
+
+    @staticmethod
+    def _remove_temp_archive(archive: Path) -> None:
+        """Delete the archive written for extraction, if it is still there."""
+        if archive.exists():
+            try:
+                archive.unlink()
+            except Exception as e:
+                logger.debug(f"Failed to clean up temp archive {archive}: {e}")
+
+    def _run_extraction(
+        self,
+        extract_thread: ZipExtractThread | TarExtractThread,
+        extracted_files: int,
+        archive_kind: str,
+    ) -> int:
+        """Run ``extract_thread`` behind a progress window and wait for it.
+
+        The thread's ``finished`` signal is received by a QObject owned by
+        the GUI thread, so the local event loop ends and the progress window
+        closes on the GUI thread rather than on the worker.
+
+        :param extract_thread: The unstarted extraction worker.
+        :param extracted_files: Number of entries in the archive.
+        :param archive_kind: ``ZIP`` or ``tar.gz``, for the log.
+        :return: ``extracted_files``.
+        :raises UpdateExtractionError: If extraction fails or is cancelled.
+        """
+        self._progress_widget = TaskProgressWindow(
+            title="Extracting Update",
+            show_message=True,
+            show_percent=True,
+        )
+        self._progress_widget.set_message("Extracting files...")
+        self._show_progress_widget(self._progress_widget)
+
+        loop = QEventLoop()
+        outcome = _ExtractionOutcome()
+        outcome.received.connect(loop.quit)
+        self._connect_extraction_cancel(extract_thread)
+        extract_thread.progress.connect(self._progress_widget.update_progress)
+        extract_thread.finished.connect(outcome.record)
+        extract_thread.start()
+        # Wait for extraction to complete without blocking event loop
+        loop.exec()
+
+        # Ensure thread is properly cleaned up before continuing
+        extract_thread.wait(EXTRACTION_THREAD_TIMEOUT_MS)
+        if extract_thread.isRunning():
+            logger.warning(
+                "Extraction thread still running after timeout, forcing quit"
+            )
+            extract_thread.quit()
+            extract_thread.wait(2000)
+        self._hide_progress_widget(self._progress_widget)
+
+        if not outcome.success:
+            raise UpdateExtractionError(f"Extraction failed: {outcome.error}")
+        logger.info(f"Extracted {extracted_files} entries from {archive_kind}")
+        return extracted_files
 
     def _normalize_structure(self, temp_base: Path, extracted_files: int) -> None:
         """
