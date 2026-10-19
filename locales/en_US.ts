@@ -1362,10 +1362,6 @@ Manage mods installed from GitHub releases.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>RimSort</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>No PublishedFileIds were supplied in operation.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2898,10 +2894,6 @@ Please select your preferred mod variant in the table below. You can also open e
     <name>ModDeletionMenu</name>
     <message>
         <source>Delete optimized textures (.dds files only)</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>RimSort</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

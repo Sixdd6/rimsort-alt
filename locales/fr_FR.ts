@@ -1512,10 +1512,6 @@ Manage mods installed from GitHub releases.</source>
         <translation>Veuillez configurer le chemin des mods locaux dans les paramètres avant de tenter d&apos;installer.</translation>
     </message>
     <message>
-        <source>RimSort</source>
-        <translation>Rimsort</translation>
-    </message>
-    <message>
         <source>No PublishedFileIds were supplied in operation.</source>
         <translation>Aucun fichier publié n&apos;a été fourni en fonctionnement.</translation>
     </message>
@@ -2921,10 +2917,6 @@ Veuillez sélectionner votre variante de mod préférée dans le tableau ci-dess
     <message>
         <source>Delete optimized textures (.dds files only)</source>
         <translation>Supprimer les textures optimisées (fichiers .dds uniquement)</translation>
-    </message>
-    <message>
-        <source>RimSort</source>
-        <translation>Rimsort</translation>
     </message>
     <message>
         <source>Mod directory was not empty. Please close all programs accessing files or subfolders in the directory (including your file manager) and try again.</source>

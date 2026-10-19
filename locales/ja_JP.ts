@@ -1375,10 +1375,6 @@ Manage mods installed from GitHub releases.</source>
         <translation>インストールを試みる前に、設定でローカルモッドのパスを設定してください。</translation>
     </message>
     <message>
-        <source>RimSort</source>
-        <translation>RimSort</translation>
-    </message>
-    <message>
         <source>No PublishedFileIds were supplied in operation.</source>
         <translation>操作にPublishedFileIdが提供されていません。</translation>
     </message>
@@ -2921,10 +2917,6 @@ Please select your preferred mod variant in the table below. You can also open e
     <message>
         <source>Delete optimized textures (.dds files only)</source>
         <translation>最適化されたテクスチャ（.ddsファイルのみ）を削除</translation>
-    </message>
-    <message>
-        <source>RimSort</source>
-        <translation>RimSort</translation>
     </message>
     <message>
         <source>Mod directory was not empty. Please close all programs accessing files or subfolders in the directory (including your file manager) and try again.</source>

@@ -31,10 +31,11 @@ from PySide6.QtWidgets import (
 import app.utils.globals as app_globals
 from app.utils import generic
 from app.utils.app_info import AppInfo
+from app.utils.constants import APP_DISPLAY_NAME
 from app.utils.event_bus import EventBus
 
 # Constants
-DEFAULT_TITLE = "RimSort"
+DEFAULT_TITLE = APP_DISPLAY_NAME
 
 
 def _get_parent_if_constrain_enabled(parent: QWidget | None = None) -> QWidget | None:

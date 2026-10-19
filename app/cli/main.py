@@ -8,10 +8,11 @@ import click
 
 from app.cli.build_db import build_db
 from app.utils.app_info import AppInfo
+from app.utils.constants import APP_DISPLAY_NAME
 
 
 @click.group()
-@click.version_option(version=AppInfo().app_version, prog_name="RimSort")
+@click.version_option(version=AppInfo().app_version, prog_name=APP_DISPLAY_NAME)
 def cli() -> None:
     """RimSort - RimWorld mod manager CLI
 

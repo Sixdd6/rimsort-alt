@@ -11,6 +11,7 @@ from PySide6.QtWidgets import QMenu, QMessageBox
 from app.controllers.metadata_controller import MetadataController
 from app.models.settings import Settings
 from app.utils.acf_utils import steamcmd_purge_mods
+from app.utils.constants import APP_DISPLAY_NAME
 from app.utils.event_bus import EventBus
 from app.utils.generic import (
     attempt_chmod,
@@ -284,7 +285,7 @@ class ModDeletionMenu(QMenu):
         # Show success message
         if result.success_count > 0:
             show_information(
-                title=self.tr("RimSort"),
+                title=APP_DISPLAY_NAME,
                 text=self.tr(
                     "Successfully deleted {result.success_count} selected mods."
                 ).format(result=result),

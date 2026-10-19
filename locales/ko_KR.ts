@@ -1375,10 +1375,6 @@ Manage mods installed from GitHub releases.</source>
         <translation>설치를 시도하기 전에 설정에서 로컬 모드 경로를 설정해 주세요.</translation>
     </message>
     <message>
-        <source>RimSort</source>
-        <translation>RimSort</translation>
-    </message>
-    <message>
         <source>No PublishedFileIds were supplied in operation.</source>
         <translation>작업에 PublishedFileId가 제공되지 않았습니다.</translation>
     </message>
@@ -2921,10 +2917,6 @@ Please select your preferred mod variant in the table below. You can also open e
     <message>
         <source>Delete optimized textures (.dds files only)</source>
         <translation>최적화된 텍스처(.dds 파일만) 삭제</translation>
-    </message>
-    <message>
-        <source>RimSort</source>
-        <translation>RimSort</translation>
     </message>
     <message>
         <source>Mod directory was not empty. Please close all programs accessing files or subfolders in the directory (including your file manager) and try again.</source>

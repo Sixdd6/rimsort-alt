@@ -1372,10 +1372,6 @@ Manage mods installed from GitHub releases.</source>
         <translation>请在尝试安装之前在设置中配置本地模组路径。</translation>
     </message>
     <message>
-        <source>RimSort</source>
-        <translation>RimSort</translation>
-    </message>
-    <message>
         <source>No PublishedFileIds were supplied in operation.</source>
         <translation>操作中未提供任何 PublishedFileIds</translation>
     </message>
@@ -2922,10 +2918,6 @@ Steam Workshop 上的 RimWorld 模组如果共享相同的 包名，则为 &apos
     <message>
         <source>Delete optimized textures (.dds files only)</source>
         <translation>删除纹理（删除 .dds 纹理）</translation>
-    </message>
-    <message>
-        <source>RimSort</source>
-        <translation>RimSort</translation>
     </message>
     <message>
         <source>Mod directory was not empty. Please close all programs accessing files or subfolders in the directory (including your file manager) and try again.</source>

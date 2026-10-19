@@ -1390,10 +1390,6 @@ Manage mods installed from GitHub releases.</source>
         <translation>Kuruluma başlamadan önce lütfen yerel modlar için dosya yolunu ayarlayın.</translation>
     </message>
     <message>
-        <source>RimSort</source>
-        <translation>RimSort</translation>
-    </message>
-    <message>
         <source>No PublishedFileIds were supplied in operation.</source>
         <translation>İşlem sırasında hiçbir PublishedFileId sağlanmadı</translation>
     </message>
@@ -2923,10 +2919,6 @@ Lütfen aşağıdaki tabloda tercih ettiğiniz Mod varyantı seçin. Doğrulamak
     <message>
         <source>Delete optimized textures (.dds files only)</source>
         <translation>Optimize edilmiş dokuları sil (yalnızca .dds dosyaları)</translation>
-    </message>
-    <message>
-        <source>RimSort</source>
-        <translation>Rimsort</translation>
     </message>
     <message>
         <source>Unable to delete mod</source>

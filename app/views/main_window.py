@@ -33,6 +33,7 @@ from app.models.settings import Settings
 from app.utils import globals
 from app.utils.acf_utils import refresh_acf_metadata
 from app.utils.app_info import AppInfo
+from app.utils.constants import APP_DISPLAY_NAME
 from app.utils.event_bus import EventBus
 from app.utils.gui_info import GUIInfo
 from app.utils.steam.steamcmd.wrapper import SteamcmdInterface
@@ -387,7 +388,7 @@ class MainWindow(QMainWindow):
 
         :param instance: Name of the instance currently being used.
         """
-        title = f"RimSort {AppInfo().app_version} | {instance} Instance"
+        title = f"{APP_DISPLAY_NAME} {AppInfo().app_version} | {instance} Instance"
         if AppInfo().is_dev_mode:
             title += " [DEV]"
         self.setWindowTitle(title)

@@ -1,6 +1,11 @@
 from enum import Enum
 from typing import Any
 
+# Name shown to users, set apart from upstream RimSort. Executable, data
+# folders and release asset names keep "RimSort" so updates and settings
+# carry over.
+APP_DISPLAY_NAME = "RimSort Alt"
+
 # Instance constants
 DEFAULT_INSTANCE_NAME = "Default"
 INSTANCE_FOLDER_NAME = "instances"

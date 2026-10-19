@@ -57,6 +57,7 @@ from app.sort.mod_sorting import ModsPanelSortKey
 from app.utils import http
 from app.utils.acf_utils import steamcmd_purge_mods
 from app.utils.app_info import AppInfo
+from app.utils.constants import APP_DISPLAY_NAME
 from app.utils.custom_list_widget_item import CustomListWidgetItem
 from app.utils.db_builder import DatabaseBuilder
 from app.utils.dict_utils import recursively_update_dict
@@ -2433,7 +2434,7 @@ class MainContent(QObject):
         # No empty publishedfileids
         if len(publishedfileids) == 0:
             dialogue.show_warning(
-                title=self.tr("RimSort"),
+                title=APP_DISPLAY_NAME,
                 text=self.tr("No PublishedFileIds were supplied in operation."),
                 information=self.tr(
                     "Please add mods to list before attempting to download."
@@ -2447,7 +2448,7 @@ class MainContent(QObject):
             and self.steamcmd_runner.process.state() == QProcess.ProcessState.Running
         ):
             dialogue.show_warning(
-                title=self.tr("RimSort"),
+                title=APP_DISPLAY_NAME,
                 text=self.tr("Unable to create SteamCMD runner!"),
                 information=self.tr("There is an active process already running!"),
                 details=f"PID {self.steamcmd_runner.process.processId()} : "
@@ -2623,7 +2624,7 @@ class MainContent(QObject):
         # No empty publishedfileids
         if len(publishedfileids) == 0:
             dialogue.show_warning(
-                title=self.tr("RimSort"),
+                title=APP_DISPLAY_NAME,
                 text=self.tr("No PublishedFileIds were supplied in operation."),
                 information=self.tr(
                     "Please add mods to list before attempting to download."

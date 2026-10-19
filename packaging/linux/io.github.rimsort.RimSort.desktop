@@ -2,7 +2,7 @@
 Version=1.0
 Type=Application
 
-Name=RimSort
+Name=RimSort Alt
 Comment=RimSort is an open source mod manager for the video game RimWorld. There is support for Linux, Mac, and Windows, built from the ground up to be a reliable, community-managed alternative to RimPy Mod Manager.
 Categories=Game;Qt;
 

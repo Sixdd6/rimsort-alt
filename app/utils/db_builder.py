@@ -12,6 +12,7 @@ from app.controllers.metadata_controller import MetadataController
 from app.models.metadata.metadata_structure import ModType
 from app.models.settings import Settings
 from app.utils.app_info import AppInfo
+from app.utils.constants import APP_DISPLAY_NAME
 from app.utils.dict_utils import recursively_update_dict
 from app.utils.event_bus import EventBus
 from app.utils.json_utils import atomic_json_dump
@@ -169,7 +170,7 @@ class DatabaseBuilder(QObject):
 
         mode = self.settings.db_builder_include
         self.db_builder = self._create_database_builder(mode, output_path)
-        self._setup_query_runner(f"RimSort - DB Builder ({mode})")
+        self._setup_query_runner(f"{APP_DISPLAY_NAME} - DB Builder ({mode})")
         self.db_builder.start()
 
     def _filter_existing_mods(
