@@ -12,7 +12,7 @@ lang: zh-cn
 
 {: .warning }
 
-> 大多数用户应当使用 [预构建版本](https://github.com/RimSort/RimSort/releases)，而**_不要_**通过 `Code > Download ZIP` 下载仓库代码。该选项下载的是未经编译的源代码，仅当您计划参与贡献，自行构建 RimSort，或使用 Python 解释器运行 RimSort 时才需要获取源代码。
+> 大多数用户应当使用 [预构建版本](https://github.com/Sixdd6/RimSort/releases)，而**_不要_**通过 `Code > Download ZIP` 下载仓库代码。该选项下载的是未经编译的源代码，仅当您计划参与贡献，自行构建 RimSort，或使用 Python 解释器运行 RimSort 时才需要获取源代码。
 
 RimSort 提供两种发行版本：稳定版（stable releases）和前瞻版（edge releases）。前瞻版的更新频率高于稳定版，但更可能存在 Bug。
 
@@ -259,6 +259,6 @@ AppImage 必须位于用户可写的位置。如果您将其放在需要 root �
 **最后手段——从源代码运行：**
 如果没有预构建的发行版适用于您的设置，您始终可以直接从 Python 源代码运行 RimSort。操作说明请参阅[开发配置指南](../development-guide/development-setup)。
 
-[所有发布]: https://github.com/RimSort/RimSort/releases
-[稳定版]: https://github.com/RimSort/RimSort/releases/latest
-[前瞻版]: https://github.com/RimSort/RimSort/releases/tag/Edge
+[所有发布]: https://github.com/Sixdd6/RimSort/releases
+[稳定版]: https://github.com/Sixdd6/RimSort/releases/latest
+[前瞻版]: https://github.com/Sixdd6/RimSort/releases/tag/Edge

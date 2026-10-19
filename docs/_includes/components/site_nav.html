@@ -17,7 +17,7 @@
     <ul class="nav-list">
       {%- for node in site.nav_external_links -%}
         {%- assign link_title = node.title -%}
-        {%- if node.url == "https://github.com/RimSort/RimSort/releases" -%}
+        {%- if node.url == "https://github.com/Sixdd6/RimSort/releases" -%}
           {%- assign link_title = ui.nav_releases | default: node.title -%}
         {%- elsif node.url == "https://github.com/RimSort/RimSort" -%}
           {%- assign link_title = ui.nav_github | default: node.title -%}

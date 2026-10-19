@@ -12,7 +12,7 @@ lang: ru
 
 {: .warning }
 
-> Большинству пользователей следует использовать [готовые релизы](https://github.com/RimSort/RimSort/releases), а **_не_** скачивать код репозитория через `Code > Download ZIP`. Эта опция скачивает исходный код, который не скомпилирован. Исходный код нужен только если вы планируете вносить вклад, собирать RimSort самостоятельно или запускать RimSort через интерпретатор Python.
+> Большинству пользователей следует использовать [готовые релизы](https://github.com/Sixdd6/RimSort/releases), а **_не_** скачивать код репозитория через `Code > Download ZIP`. Эта опция скачивает исходный код, который не скомпилирован. Исходный код нужен только если вы планируете вносить вклад, собирать RimSort самостоятельно или запускать RimSort через интерпретатор Python.
 
 Есть два типа релизов RimSort: stable (стабильные) и edge (передовые). Edge-релизы выходят намного чаще, но в них с большей вероятностью есть баги.
 
@@ -259,6 +259,6 @@ AppImage должен находиться в месте, доступном п�
 **Последнее средство — запуск из исходников:**
 Если ни один из предварительно собранных релизов не работает для вашей системы, вы всегда можете запустить RimSort прямо из исходников Python. Инструкции см. в [руководстве по разработке](../development-guide/development-setup).
 
-[Releases]: https://github.com/RimSort/RimSort/releases
-[Stable Release]: https://github.com/RimSort/RimSort/releases/latest
-[Edge Release]: https://github.com/RimSort/RimSort/releases/tag/Edge
+[Releases]: https://github.com/Sixdd6/RimSort/releases
+[Stable Release]: https://github.com/Sixdd6/RimSort/releases/latest
+[Edge Release]: https://github.com/Sixdd6/RimSort/releases/tag/Edge

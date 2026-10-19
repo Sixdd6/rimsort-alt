@@ -84,8 +84,8 @@ RimSort is distributed by a [GPL-3.0 license](https://github.com/RimSort/RimSort
 We aim to foster a welcoming community.
 [View our Code of Conduct](https://github.com/RimSort/RimSort/tree/main/CODE_OF_CONDUCT.md) on our GitHub repository.
 
-[Wiki]: https://rimsort.github.io
+[Wiki]: https://sixdd6.github.io/RimSort
 [Repo]: https://github.com/RimSort/RimSort
 [Issues]: https://github.com/RimSort/RimSort/issues
-[Releases]: https://github.com/RimSort/RimSort/releases
+[Releases]: https://github.com/Sixdd6/RimSort/releases
 [Discord]: https://discord.gg/aV7g69JmR2

@@ -26,11 +26,11 @@ Unfortunately, because RimSort is compiled Python, it has a tendency to trigger 
 
 For **_windows defender (WD)_** specifically, we tend to try and send samples to Microsoft to whitelist the RimSort release if there are any false detections. This process can still take at least a full day, and needs to be repeated every release. Thus, if WD is false flagging RimSort, we still appreciate a quick report, but it should be safe to override WD.
 
-For **_macOS_,** we'd require a similar yet separate yearly fee to sign apps on macOS. Mac users can, for now, use [this workaround](https://rimsort.github.io/RimSort/user-guide/downloading-and-installing#macos). There is no solution for us on macOS other than paying Apple.
+For **_macOS_,** we'd require a similar yet separate yearly fee to sign apps on macOS. Mac users can, for now, use [this workaround](https://sixdd6.github.io/RimSort/user-guide/downloading-and-installing#macos). There is no solution for us on macOS other than paying Apple.
 
 ## How do I update RimSort manually if the built-in updater fails?
 
-Close RimSort, then download the latest release that matches your release type (stable or edge), operating system, and CPU architecture from the [RimSort releases page](https://github.com/RimSort/RimSort/releases). Do not use `Code > Download ZIP`, because that archive contains the source code rather than a runnable build. Extract archive-based releases into a new empty folder instead of merging them with the old installation; on macOS, replace the existing `RimSort.app`, and on Linux, replace the AppImage and make the new file executable with `chmod +x RimSort-*.AppImage`. Launch the new version before removing the old application files. Your settings and other RimSort data are stored separately in your operating system's application data directory, so leave that directory in place. See [Downloading and Installing](https://rimsort.github.io/RimSort/user-guide/downloading-and-installing) for platform-specific instructions.
+Close RimSort, then download the latest release that matches your release type (stable or edge), operating system, and CPU architecture from the [RimSort releases page](https://github.com/Sixdd6/RimSort/releases). Do not use `Code > Download ZIP`, because that archive contains the source code rather than a runnable build. Extract archive-based releases into a new empty folder instead of merging them with the old installation; on macOS, replace the existing `RimSort.app`, and on Linux, replace the AppImage and make the new file executable with `chmod +x RimSort-*.AppImage`. Launch the new version before removing the old application files. Your settings and other RimSort data are stored separately in your operating system's application data directory, so leave that directory in place. See [Downloading and Installing](https://sixdd6.github.io/RimSort/user-guide/downloading-and-installing) for platform-specific instructions.
 
 ## Where are game paths located?
 
@@ -42,11 +42,11 @@ Game paths and other location settings are located in the settings panel under `
 
 ## What is the Steam Workshop Database used for?
 
-RimSort uses the Steam Workshop Database (Steam DB) for loading mod dependency data that is only available on Steam (the "required items" section). While modders should strive to specify this data also in their mods about.xml, the Steam DB allows RimSort to use a mods Steam data, in addition to its about.xml. For details, see the [user guide](https://rimsort.github.io/RimSort/user-guide/databases)
+RimSort uses the Steam Workshop Database (Steam DB) for loading mod dependency data that is only available on Steam (the "required items" section). While modders should strive to specify this data also in their mods about.xml, the Steam DB allows RimSort to use a mods Steam data, in addition to its about.xml. For details, see the [user guide](https://sixdd6.github.io/RimSort/user-guide/databases)
 
 ## What is the Community Rules Database used for?
 
-The Community Rules Database (Community Rules DB / CR DB) is used for getting RimSort to place mods in the correct load order. These rules are found and submitted by the community and then collected for shared use in the CR DB. You can contribute to the CR DB by submitting pull requests on GitHub. For details about the DB, see the [user guide](https://rimsort.github.io/RimSort/user-guide/databases).
+The Community Rules Database (Community Rules DB / CR DB) is used for getting RimSort to place mods in the correct load order. These rules are found and submitted by the community and then collected for shared use in the CR DB. You can contribute to the CR DB by submitting pull requests on GitHub. For details about the DB, see the [user guide](https://sixdd6.github.io/RimSort/user-guide/databases).
 
 ## How do I enable Steam client integration features like `Open mod in Steam` if I have Steam installed?
 

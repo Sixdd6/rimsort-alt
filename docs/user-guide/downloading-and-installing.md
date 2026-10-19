@@ -11,7 +11,7 @@ permalink: user-guide/downloading-and-installing
 
 {: .warning }
 
-> Most users should be utilizing [pre-built releases](https://github.com/RimSort/RimSort/releases) and **_not_** downloading the repository code from `Code > Download ZIP`. This option downloads the source code which is not compiled. You only need the source code if you plan on contributing, building RimSort yourself, or running RimSort via a Python interpreter.
+> Most users should be utilizing [pre-built releases](https://github.com/Sixdd6/RimSort/releases) and **_not_** downloading the repository code from `Code > Download ZIP`. This option downloads the source code which is not compiled. You only need the source code if you plan on contributing, building RimSort yourself, or running RimSort via a Python interpreter.
 
 There are two types of RimSort releases. Stable releases, and edge releases. Edge releases come out much more often then stable releases, but are more likely to have bugs.
 
@@ -258,6 +258,6 @@ If RimSort can't find your mods or config, double-check which Steam installation
 **Last resort — run from source:**
 If no pre-built release works for your setup, you can always run RimSort directly from the Python source. See the [Development Setup guide](../development-guide/development-setup) for instructions.
 
-[Releases]: https://github.com/RimSort/RimSort/releases
-[Stable Release]: https://github.com/RimSort/RimSort/releases/latest
-[Edge Release]: https://github.com/RimSort/RimSort/releases/tag/Edge
+[Releases]: https://github.com/Sixdd6/RimSort/releases
+[Stable Release]: https://github.com/Sixdd6/RimSort/releases/latest
+[Edge Release]: https://github.com/Sixdd6/RimSort/releases/tag/Edge
