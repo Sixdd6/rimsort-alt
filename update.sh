@@ -73,8 +73,8 @@ verify_checksum() {
 	return 0
 }
 
-# Trap errors to exit cleanly
-trap 'log_error "Update failed. Exiting."; exit 1' ERR
+# Trap errors: put the previous version back if it was already moved aside
+trap 'log_error "Update failed. Exiting."; restore_previous_version; exit 1' ERR
 
 # Colors for output
 RED='\033[0;31m'
@@ -136,6 +136,96 @@ set_permissions() {
 		chmod +x "$target_dir/$EXECUTABLE_NAME" 2>/dev/null || log_warning "Could not set permissions for $EXECUTABLE_NAME"
 		chmod +x "$target_dir/todds/todds" 2>/dev/null || log_warning "Could not set permissions for todds"
 		chmod +x "$target_dir/QtWebEngineProcess" 2>/dev/null || log_warning "Could not set permissions for QtWebEngineProcess"
+	fi
+}
+
+# Where the current install is parked during the swap, and the staged copy
+# of the new one. Both live next to the install target.
+OLD_VERSION_DIR=""
+STAGING_DIR=""
+INSTALL_TARGET=""
+
+# Function to put the previous version back after a failed swap
+restore_previous_version() {
+	if [ -n "$STAGING_DIR" ] && [ -d "$STAGING_DIR" ]; then
+		rm -rf "$STAGING_DIR" 2>/dev/null || true
+	fi
+	if [ -z "$OLD_VERSION_DIR" ] || [ ! -d "$OLD_VERSION_DIR" ]; then
+		return 0
+	fi
+	if [ -e "$INSTALL_TARGET" ]; then
+		log_error "Previous version kept at: $OLD_VERSION_DIR"
+		return 0
+	fi
+	if mv "$OLD_VERSION_DIR" "$INSTALL_TARGET"; then
+		log_info "Previous version restored to: $INSTALL_TARGET"
+	else
+		log_error "Could not restore the previous version from: $OLD_VERSION_DIR"
+	fi
+}
+
+# Function to install the update without a window where nothing runnable exists.
+# The new files are staged next to the target and swapped in with two renames,
+# so the previous version is intact until the copy has fully succeeded and can
+# be put back if the swap fails. When the parent directory is not writable the
+# files are synced in place instead, which cannot be rolled back.
+install_update() {
+	local target="$1"
+	local parent
+	parent="$(dirname "$target")"
+	INSTALL_TARGET="$target"
+
+	if $DRY_RUN; then
+		log_info "DRY RUN: Would install $UPDATE_SOURCE_FOLDER over $target"
+		rsync "${RSYNC_OPTS[@]}" --delete "$UPDATE_SOURCE_FOLDER/" "$target/"
+		return 0
+	fi
+
+	if [ ! -w "$parent" ]; then
+		log_warning "$parent is not writable; updating $target in place without rollback"
+		if ! rsync "${RSYNC_OPTS[@]}" --delete "$UPDATE_SOURCE_FOLDER/" "$target/"; then
+			log_error "Failed to sync update files to $target"
+			return 1
+		fi
+		log_success "Update files synced"
+		return 0
+	fi
+
+	STAGING_DIR="$target.new"
+	OLD_VERSION_DIR="$target.old"
+	rm -rf "$STAGING_DIR" "$OLD_VERSION_DIR"
+
+	log_info "Staging new files in: $STAGING_DIR"
+	if ! rsync "${RSYNC_OPTS[@]}" "$UPDATE_SOURCE_FOLDER/" "$STAGING_DIR/"; then
+		log_error "Failed to copy update files to $STAGING_DIR"
+		rm -rf "$STAGING_DIR"
+		STAGING_DIR=""
+		return 1
+	fi
+
+	log_info "Swapping in the new version"
+	if [ -e "$target" ]; then
+		mv "$target" "$OLD_VERSION_DIR"
+	fi
+	if ! mv "$STAGING_DIR" "$target"; then
+		log_error "Failed to move the staged files to $target"
+		restore_previous_version
+		return 1
+	fi
+	STAGING_DIR=""
+	log_success "New version installed"
+}
+
+# Function to drop the parked previous version once the new one is in place
+remove_previous_version() {
+	if [ -z "$OLD_VERSION_DIR" ] || [ ! -d "$OLD_VERSION_DIR" ]; then
+		return 0
+	fi
+	log_info "Removing previous version: $OLD_VERSION_DIR"
+	if rm -rf "$OLD_VERSION_DIR" 2>/dev/null; then
+		log_success "Previous version removed"
+	else
+		log_warning "Could not remove previous version: $OLD_VERSION_DIR"
 	fi
 }
 
@@ -347,9 +437,9 @@ log_info "Performing update..."
 log_info "Source: $UPDATE_SOURCE_FOLDER"
 log_info "Target: $INSTALL_DIR"
 
-RSYNC_OPTS="-av"
+RSYNC_OPTS=(-av)
 if $DRY_RUN; then
-	RSYNC_OPTS="$RSYNC_OPTS --dry-run"
+	RSYNC_OPTS+=(--dry-run)
 fi
 
 if [ "$OS" = "Darwin" ]; then
@@ -362,26 +452,8 @@ if [ "$OS" = "Darwin" ]; then
 	fi
 
 	TARGET_BUNDLE="$INSTALL_PARENT_DIR/$EXECUTABLE_NAME"
-	if [ -d "$TARGET_BUNDLE" ]; then
-		log_info "Removing old app bundle: $TARGET_BUNDLE"
-		if ! $DRY_RUN && ! rm -rf "$TARGET_BUNDLE"; then
-			log_error "Failed to remove old app bundle at $TARGET_BUNDLE"
-			exit 1
-		fi
-		if $DRY_RUN; then
-			log_info "DRY RUN: Would remove $TARGET_BUNDLE"
-		else
-			log_success "Old app bundle removed"
-		fi
-	fi
-
-	log_info "Syncing new app bundle to: $TARGET_BUNDLE"
 	mkdir -p "$INSTALL_PARENT_DIR"
-	if ! rsync "$RSYNC_OPTS" "$UPDATE_SOURCE_FOLDER/" "$TARGET_BUNDLE/"; then
-		log_error "Failed to sync update files to $TARGET_BUNDLE"
-		exit 1
-	fi
-	log_success "New app bundle synced"
+	install_update "$TARGET_BUNDLE" || exit 1
 
 	# Set permissions on the newly installed app bundle
 	set_permissions "$TARGET_BUNDLE"
@@ -391,16 +463,13 @@ else
 	# Linux update process
 	log_info "Starting Linux update process"
 
-	log_info "Syncing update files with rsync"
-	if ! rsync "$RSYNC_OPTS" --delete "$UPDATE_SOURCE_FOLDER/" "$INSTALL_DIR/"; then
-		log_error "Failed to sync update files to $INSTALL_DIR"
-		exit 1
-	fi
-	log_success "Update files synced"
+	install_update "$INSTALL_DIR" || exit 1
 
 	set_permissions "$INSTALL_DIR"
 	launch_app "$INSTALL_DIR/$EXECUTABLE_NAME"
 fi
+
+remove_previous_version
 
 # Clean up temporary files
 log_info "Cleaning up temporary files..."
