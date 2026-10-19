@@ -2290,20 +2290,22 @@ class UpdateManager(QObject):
         logger.info("Stopping watchdog Observer thread before update...")
         self.main_content.stop_watchdog_signal.emit()
 
-        if is_msi:
-            if self._system != "Windows":
-                raise UpdateScriptLaunchError(
-                    "MSI installers are only supported on Windows"
-                )
-            # Validate MSI path
-            if not update_source_path.exists() or not update_source_path.is_file():
-                raise UpdateScriptLaunchError(
-                    f"MSI file not found or is not a file: {update_source_path}"
-                )
-            self._launch_msi_installer(update_source_path, log_path, needs_elevation)
-            return
-
         try:
+            if is_msi:
+                if self._system != "Windows":
+                    raise UpdateScriptLaunchError(
+                        "MSI installers are only supported on Windows"
+                    )
+                # Validate MSI path
+                if not update_source_path.exists() or not update_source_path.is_file():
+                    raise UpdateScriptLaunchError(
+                        f"MSI file not found or is not a file: {update_source_path}"
+                    )
+                self._launch_msi_installer(
+                    update_source_path, log_path, needs_elevation
+                )
+                return
+
             script_path, args_repr, _start_new_session, install_dir = (
                 self._get_script_info(update_source_path, log_path, needs_elevation)
             )
@@ -2388,6 +2390,9 @@ class UpdateManager(QObject):
             sys.exit(0)
 
         except Exception as e:
+            # RimSort keeps running, so the watchdog must come back
+            logger.info("Update launch failed, resuming the watchdog")
+            self.main_content.start_watchdog_signal.emit()
             raise UpdateScriptLaunchError(f"Failed to launch update script: {e}") from e
 
     def _launch_windows_update_script(

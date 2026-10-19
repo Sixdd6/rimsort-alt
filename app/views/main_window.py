@@ -111,6 +111,7 @@ class MainWindow(QMainWindow):
             self.__disable_enable_widgets
         )
         self.main_content_panel.stop_watchdog_signal.connect(self.shutdown_watchdog)
+        self.main_content_panel.start_watchdog_signal.connect(self.resume_watchdog)
 
         self.bottom_panel = Status()
 
@@ -409,6 +410,12 @@ class MainWindow(QMainWindow):
             self.main_content_panel.metadata_controller.process_update
         )
         self.watchdog_event_handler.start()
+
+    def resume_watchdog(self) -> None:
+        """Start the watchdog again after it was stopped for an update that
+        did not launch, provided the setting is still on."""
+        if self.settings.watchdog_toggle and self.watchdog_event_handler is None:
+            self.initialize_watchdog()
 
     def shutdown_watchdog(self) -> None:
         if self.watchdog_event_handler is not None:

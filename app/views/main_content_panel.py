@@ -135,6 +135,7 @@ class MainContent(QObject):
     disable_enable_widgets_signal = Signal(bool)
     status_signal = Signal(str)
     stop_watchdog_signal = Signal()
+    start_watchdog_signal = Signal()
 
     def __new__(cls, *args: Any, **kwargs: Any) -> MainContent:  # noqa: PYI034
         if cls._instance is None:
