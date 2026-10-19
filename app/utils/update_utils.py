@@ -1837,44 +1837,27 @@ class UpdateManager(QObject):
             show_percent=False,
         )
         self._progress_widget.set_message("Normalizing extracted structure...")
+        self._show_progress_widget(self._progress_widget, cancellable=False)
 
-        # Show progress widget in panel or as standalone window
-        if self.mod_info_panel:
-            self.mod_info_panel.info_panel_frame.hide()
-            self.mod_info_panel.panel.addWidget(self._progress_widget)
-            self._progress_widget.show()
-        else:
-            self._progress_widget.show()
-
-        # Use a thread and event loop to keep UI responsive during normalization
-        normalization_result: dict[str, Any] = {"success": False, "error": None}
+        # Normalise on a worker thread; the thread's finished signal ends the
+        # nested loop (queued, so a thread that finishes before exec() starts
+        # still ends it) and any exception is carried back here
+        thread = WorkThread(
+            target=partial(
+                self._normalize_extracted_structure, temp_base, extracted_files
+            )
+        )
         loop = QEventLoop()
-
-        def worker_func() -> None:
-            try:
-                self._normalize_extracted_structure(temp_base, extracted_files)
-                normalization_result["success"] = True
-            except Exception as e:
-                normalization_result["error"] = e
-            finally:
-                logger.debug("Structure normalization worker thread completed")
-                loop.quit()
-
-        thread = threading.Thread(target=worker_func, daemon=False)
+        thread.finished.connect(loop.quit)
         thread.start()
-
         loop.exec()
+        normalization_result: dict[str, Any] = {
+            "success": thread.exception is None,
+            "error": thread.exception,
+        }
+        logger.debug("Structure normalization worker thread completed")
 
-        try:
-            if self._progress_widget:
-                self._progress_widget.close()
-                # Remove from panel if it was added there
-                if self.mod_info_panel:
-                    self.mod_info_panel.panel.removeWidget(self._progress_widget)
-                    # Restore panel visibility
-                    self.mod_info_panel.info_panel_frame.show()
-        except Exception:  # noqa: S110
-            pass
+        self._hide_progress_widget(self._progress_widget)
 
         if not normalization_result["success"]:
             error = normalization_result["error"]
