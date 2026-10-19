@@ -117,6 +117,22 @@ if TYPE_CHECKING:
     from app.models.settings import Settings
 
 
+def normalize_machine(machine: str) -> str:
+    """Map a ``platform.machine()`` spelling onto the name release assets use.
+
+    :param machine: ``AMD64``, ``x86_64``, ``aarch64``, ``arm64``, ``i686``...
+    :return: ``x86_64``, ``arm64``, ``x86`` or the lower-cased input.
+    """
+    name = machine.lower()
+    if name in ("amd64", "x86_64", "x64", "em64t"):
+        return "x86_64"
+    if name in ("arm64", "aarch64"):
+        return "arm64"
+    if name in ("x86", "i386", "i486", "i586", "i686"):
+        return "x86"
+    return name
+
+
 class UpdateError(Exception):
     """Base exception for update-related errors."""
 
@@ -495,22 +511,24 @@ class UpdateManager(QObject):
         "Darwin": {
             "patterns": ["Darwin", "macOS", "Mac"],
             "arch_patterns": {
-                "arm64": ["arm64", "arm", "apple"],
-                "x86_64": ["x86_64", "i386", "intel"],
+                "arm64": ["arm64", "aarch64", "apple"],
+                "x86_64": ["x86_64", "intel"],
             },
         },
         "Linux": {
             "patterns": ["Linux", "Ubuntu"],
             "arch_patterns": {
-                "64bit": ["x86_64", "amd64"],
-                "32bit": ["i386", "x86"],
+                "x86_64": ["x86_64", "amd64"],
+                "arm64": ["arm64", "aarch64"],
+                "x86": ["i386", "i686"],
             },
         },
         "Windows": {
             "patterns": ["Windows", "Win"],
             "arch_patterns": {
-                "64bit": ["x86_64", "x64", "amd64"],
-                "32bit": ["x86", "i386"],
+                "x86_64": ["x86_64", "x64", "amd64"],
+                "arm64": ["arm64", "aarch64"],
+                "x86": ["i386", "i686"],
             },
         },
     }
@@ -549,12 +567,12 @@ class UpdateManager(QObject):
         self._elevation_needed: bool | None = None  # Cache elevation check result
         # Cache platform info to avoid repeated calls
         self._system = platform.system()
-        # On macOS, platform.architecture()[0] returns "64bit" for both Intel and
-        # ARM, so use platform.machine() which returns "arm64" or "x86_64".
-        if self._system == "Darwin":
-            self._arch = platform.machine()
-        else:
-            self._arch = platform.architecture()[0]
+        # platform.architecture() says "64bit" for ARM and x86 alike, so the
+        # machine name decides which build fits
+        self._arch = normalize_machine(platform.machine())
+        # An x86 build must never be offered to an ARM machine; assets that
+        # do not name an architecture are x86 builds from before ARM support
+        self._arch_required = self._arch == "arm64"
         # Cache platform patterns for performance
         self._cached_patterns = self._platform_patterns.get(self._system, None)
         self._download_cancelled = False
@@ -1140,7 +1158,9 @@ class UpdateManager(QObject):
         # AppImage mode: prefer .AppImage asset, fall back to ZIP
         if self._system == "Linux" and AppInfo().is_appimage:
             logger.info("AppImage mode: looking for .AppImage asset first")
-            candidate = self._find_appimage_asset(assets, arch_patterns)
+            candidate = self._find_appimage_asset(
+                assets, arch_patterns, self._arch_required
+            )
             if candidate:
                 return candidate
             logger.warning("No .AppImage asset found in release, falling back to ZIP")
@@ -1159,7 +1179,7 @@ class UpdateManager(QObject):
 
         for ext in preferred_order:
             candidate = self._find_best_asset_match(
-                assets, system_patterns, arch_patterns, ext
+                assets, system_patterns, arch_patterns, ext, self._arch_required
             )
             if candidate:
                 return candidate
@@ -1175,6 +1195,7 @@ class UpdateManager(QObject):
         system_patterns: list[str],
         arch_patterns: list[str],
         preferred_extension: str,
+        require_arch: bool = False,
     ) -> DownloadInfo | None:
         """
         Find the best matching asset from the list.
@@ -1184,6 +1205,7 @@ class UpdateManager(QObject):
             system_patterns: System name patterns to match
             arch_patterns: Architecture patterns to match
             preferred_extension: Preferred file extension (.zip or .msi)
+            require_arch: Accept only assets that name this machine's architecture
 
         Returns:
             Dictionary with 'url', 'name', and 'is_msi' keys, or None if no match
@@ -1219,8 +1241,11 @@ class UpdateManager(QObject):
                         "is_tar_gz": preferred_extension == TAR_GZ_EXTENSION,
                     },
                 )
-            elif download_url and self._asset_matches(
-                asset, system_patterns, preferred_extension, require_arch=False
+            elif (
+                download_url
+                and not require_arch
+                and not self._names_other_arch(asset_name)
+                and self._asset_matches(asset, system_patterns, preferred_extension)
             ):
                 logger.debug(
                     f"Found system-only matching asset: {asset_name} -> {download_url}"
@@ -1239,10 +1264,32 @@ class UpdateManager(QObject):
 
         return candidate
 
+    def _names_other_arch(self, asset_name: str) -> bool:
+        """Whether ``asset_name`` is explicitly built for another architecture.
+
+        :param asset_name: Release asset file name.
+        """
+        if self._cached_patterns is None:
+            return False
+        arch_patterns = cast(
+            dict[str, list[str]], self._cached_patterns["arch_patterns"]
+        )
+        mine = [p.lower() for p in arch_patterns.get(self._arch, [])]
+        name = asset_name.lower()
+        for arch, patterns in arch_patterns.items():
+            if arch == self._arch:
+                continue
+            for pattern in patterns:
+                token = pattern.lower()
+                if token in name and not any(token in own for own in mine):
+                    return True
+        return False
+
     def _find_appimage_asset(
         self,
         assets: list[dict[str, Any]],
         arch_patterns: list[str],
+        require_arch: bool = False,
     ) -> DownloadInfo | None:
         """
         Find an AppImage asset from the release.
@@ -1275,6 +1322,8 @@ class UpdateManager(QObject):
                     },
                 )
 
+        if require_arch:
+            return None
         # Fallback: return any AppImage regardless of arch
         for asset in assets:
             asset_name = str(asset.get("name", ""))

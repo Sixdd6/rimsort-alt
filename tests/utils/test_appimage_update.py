@@ -131,7 +131,7 @@ SAMPLE_ASSETS_WITH_TAR_GZ: list[dict[str, Any]] = [
 
 def _make_platform_mgr(
     system: str,
-    arch: str = "64bit",
+    arch: str = "x86_64",
     *,
     bind_appimage: bool = False,
 ) -> UpdateManager:
@@ -139,6 +139,8 @@ def _make_platform_mgr(
     mgr = MagicMock(spec=UpdateManager)
     mgr._system = system
     mgr._arch = arch
+    mgr._arch_required = arch == "arm64"
+    mgr._names_other_arch = UpdateManager._names_other_arch.__get__(mgr)
     mgr._cached_patterns = UpdateManager._platform_patterns[system]
     mgr._find_best_asset_match = UpdateManager._find_best_asset_match.__get__(mgr)
     mgr._get_platform_download_url = UpdateManager._get_platform_download_url.__get__(
@@ -219,7 +221,7 @@ class TestTarGzAssetSelection:
     @pytest.fixture
     def _darwin_mgr(self, monkeypatch: pytest.MonkeyPatch) -> UpdateManager:
         monkeypatch.delenv("APPIMAGE", raising=False)
-        return _make_platform_mgr("Darwin", arch="ARM64")
+        return _make_platform_mgr("Darwin", arch="arm64")
 
     def test_linux_prefers_tar_gz_over_zip(self, _linux_mgr: UpdateManager) -> None:
         result = _linux_mgr._get_platform_download_url(SAMPLE_ASSETS_WITH_TAR_GZ)
