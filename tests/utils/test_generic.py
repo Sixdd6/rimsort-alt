@@ -10,6 +10,7 @@ from app.utils.generic import (
     check_valid_http_git_url,
     extract_git_dir_name,
     extract_git_user_or_org,
+    probe_internet_connection,
     restart_application,
 )
 
@@ -156,3 +157,16 @@ class TestCheckInternetConnection:
 
         assert head.call_count == 2
         warn.assert_called_once()
+
+    def test_probe_reports_failed_hosts_without_a_dialog(self) -> None:
+        with (
+            patch(
+                "app.utils.generic.http.head",
+                side_effect=requests.exceptions.ConnectionError("down"),
+            ),
+            patch("app.utils.generic.dialogue.show_internet_connection_error") as warn,
+        ):
+            failed = probe_internet_connection()
+
+        assert failed == ["https://steamcommunity.com", "https://github.com"]
+        warn.assert_not_called()

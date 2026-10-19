@@ -13,6 +13,7 @@ import threading
 import time
 import traceback
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
 from pathlib import Path
@@ -27,7 +28,7 @@ from PySide6.QtWidgets import QMessageBox
 from app.models.animations import WorkThread
 from app.utils import http
 from app.utils.app_info import AppInfo
-from app.utils.generic import check_internet_connection
+from app.utils.generic import probe_internet_connection
 from app.utils.zip_extractor import (
     BadZipFile,
     ZipExtractThread,
@@ -144,6 +145,18 @@ class ReleaseInfo(TypedDict):
     is_msi: bool
     is_appimage: bool
     is_tar_gz: bool
+
+
+@dataclass
+class ReleaseProbe:
+    """What the background release check found.
+
+    ``unreachable_hosts`` is non-empty when no host answered, in which case
+    the GitHub API was not consulted and ``release_data`` is ``None``.
+    """
+
+    unreachable_hosts: list[str]
+    release_data: dict[str, Any] | None
 
 
 class DownloadInfo(TypedDict):
@@ -549,6 +562,8 @@ class UpdateManager(QObject):
         )
         # Progress window for update operations
         self._progress_widget: TaskProgressWindow | None = None
+        self._release_check_thread: WorkThread | None = None
+        self._check_started = datetime.now()  # noqa: DTZ005
 
     def _check_needs_elevation(self) -> bool:
         """
@@ -666,49 +681,40 @@ class UpdateManager(QObject):
             "Please install one of these or ensure the update script is executable."
         )
 
-    def do_check_for_update(self) -> None:
-        """
-        Check for RimSort updates and handle the update process.
+    def do_check_for_update(self, quiet: bool = False) -> None:
+        """Check for RimSort updates and, if one is accepted, install it.
 
-        This method orchestrates the update process by delegating to focused sub-methods
-        for better maintainability and testability.
+        The network part (reachability probe and GitHub API call) runs on a
+        worker thread so the window never freezes; the result is handled on
+        the GUI thread by :meth:`_on_release_probe_done`.
+
+        :param quiet: Automatic check at start-up. Only an available update
+            produces a dialog; being offline, rate-limited or running from
+            source is merely logged.
         """
-        start_time = datetime.now()  # noqa: DTZ005
         logger.info("Starting update check process...")
+        if not self._validate_prerequisites(quiet):
+            return
+        if self.is_checking:
+            logger.info("An update check is already running")
+            return
+        self._check_started = datetime.now()  # noqa: DTZ005
+        thread = WorkThread(target=self._probe_release)
+        thread.data_ready.connect(partial(self._on_release_probe_done, thread, quiet))
+        self._release_check_thread = thread
+        thread.start()
 
-        try:
-            # Validate prerequisites
-            if not self._validate_prerequisites():
-                return
+    @property
+    def is_checking(self) -> bool:
+        """Whether a release check is still running on its worker thread."""
+        thread = self._release_check_thread
+        return thread is not None and thread.isRunning()
 
-            # Fetch and compare versions
-            update_info = self._fetch_and_compare_versions()
-            if not update_info:
-                logger.info("No update available or update declined by user")
-                return
+    def _validate_prerequisites(self, quiet: bool = False) -> bool:
+        """Decide whether an update check makes sense for this process.
 
-            # Handle the update process
-            self._handle_update_process(update_info)
-
-            total_time = (datetime.now() - start_time).total_seconds()  # noqa: DTZ005
-            logger.info(f"Update check process completed in {total_time:.2f}s")
-
-        except Exception as e:
-            total_time = (datetime.now() - start_time).total_seconds()  # noqa: DTZ005
-            logger.exception(f"Update check failed after {total_time:.2f}s")
-            dialogue.show_warning(
-                title=self.tr(ERR_UPDATE_FAILED_TITLE),
-                text=self.tr(ERR_UPDATE_FAILED_TEXT),
-                information=f"Unexpected error during update check: {e!s}",
-                details=traceback.format_exc(),
-            )
-
-    def _validate_prerequisites(self) -> bool:
-        """
-        Validate all prerequisites for the update process.
-
-        Returns:
-            bool: True if all prerequisites are met, False otherwise
+        :param quiet: Suppress the running-from-source dialog.
+        :return: True when the check should go ahead.
         """
         # Check for disable flag
         if os.getenv("RIMSORT_DISABLE_UPDATER"):
@@ -722,23 +728,72 @@ class UpdateManager(QObject):
             logger.debug(
                 "You are running from Python interpreter. Skipping update check..."
             )
-            dialogue.show_warning(
-                title=ERR_UPDATE_SKIPPED_TITLE,
-                text=ERR_UPDATE_SKIPPED_TEXT,
-                information=ERR_UPDATE_SKIPPED_INFO,
-            )
+            if not quiet:
+                dialogue.show_warning(
+                    title=self.tr(ERR_UPDATE_SKIPPED_TITLE),
+                    text=self.tr(ERR_UPDATE_SKIPPED_TEXT),
+                    information=self.tr(ERR_UPDATE_SKIPPED_INFO),
+                )
             return False
+        return True
 
-        # Check internet connection
-        return check_internet_connection()
+    def _probe_release(self) -> ReleaseProbe:
+        """Worker-thread half of the check: reachability, then the release.
 
-    def _fetch_and_compare_versions(self) -> dict[str, Any] | None:
+        :return: The probe result; exceptions from the API call propagate.
         """
-        Fetch latest release information and compare versions.
+        unreachable = probe_internet_connection()
+        if unreachable:
+            return ReleaseProbe(unreachable_hosts=unreachable, release_data=None)
+        return ReleaseProbe(
+            unreachable_hosts=[], release_data=self._fetch_release_data()
+        )
 
-        Returns:
-            Dict containing update information if update is available and accepted,
-            None if no update needed or update declined
+    def _on_release_probe_done(
+        self, thread: WorkThread, quiet: bool, _data: object
+    ) -> None:
+        """GUI-thread half of the check: report, compare and maybe update.
+
+        :param thread: The finished worker, carrying its result or exception.
+        :param quiet: See :meth:`do_check_for_update`.
+        """
+        try:
+            if thread.exception is not None:
+                self._report_release_fetch_error(thread.exception, quiet)
+                return
+            probe = cast(ReleaseProbe, thread.data)
+            if probe.unreachable_hosts:
+                if not quiet:
+                    dialogue.show_internet_connection_error(
+                        failed_urls=probe.unreachable_hosts
+                    )
+                return
+            update_info = self._fetch_and_compare_versions(
+                probe.release_data or {}, quiet
+            )
+            if not update_info:
+                logger.info("No update available or update declined by user")
+                return
+            self._handle_update_process(update_info)
+            total_time = (datetime.now() - self._check_started).total_seconds()  # noqa: DTZ005
+            logger.info(f"Update check process completed in {total_time:.2f}s")
+        except Exception as e:
+            logger.exception("Update check failed")
+            dialogue.show_warning(
+                title=self.tr(ERR_UPDATE_FAILED_TITLE),
+                text=self.tr(ERR_UPDATE_FAILED_TEXT),
+                information=f"Unexpected error during update check: {e!s}",
+                details=traceback.format_exc(),
+            )
+
+    def _fetch_and_compare_versions(
+        self, release_data: dict[str, Any], quiet: bool = False
+    ) -> dict[str, Any] | None:
+        """Compare the fetched release with this build and ask about updating.
+
+        :param release_data: The GitHub release JSON.
+        :param quiet: Suppress failure dialogs; the update prompt still shows.
+        :return: Update details when an update is available and accepted.
         """
         # Determine if elevation is needed
         needs_elevation = self._check_needs_elevation()
@@ -748,9 +803,9 @@ class UpdateManager(QObject):
         current_version = AppInfo().app_version
         logger.info(f"Current RimSort version: {current_version}")
 
-        # Get the latest release info
-        logger.info("Fetching latest release information from GitHub API...")
-        latest_release_info = self._get_latest_release_info(needs_elevation)
+        latest_release_info = self._get_latest_release_info(
+            release_data, needs_elevation, quiet
+        )
         if not latest_release_info:
             logger.warning("Failed to retrieve latest release information")
             return None
@@ -760,13 +815,15 @@ class UpdateManager(QObject):
         download_url = latest_release_info["download_url"]
 
         logger.info(f"Latest RimSort version: {latest_version}")
-        logger.info(f"Update available: {latest_tag_name} ({latest_version})")
 
         # Compare versions
-        current_version_parsed = self._parse_current_version(current_version)
+        current_version_parsed = self._parse_current_version(current_version, quiet)
+        if current_version_parsed is None:
+            return None
         if current_version_parsed >= latest_version:
             logger.info("Already running the latest version")
             return None
+        logger.info(f"Update available: {latest_tag_name} ({latest_version})")
 
         # Prompt user for update
         if not self._prompt_user_for_update(latest_tag_name, current_version):
@@ -810,21 +867,26 @@ class UpdateManager(QObject):
             text = f"{core}.dev{number}{local or ''}"
         return text
 
-    def _parse_current_version(self, current_version: str) -> version.Version:
+    def _parse_current_version(
+        self, current_version: str, quiet: bool = False
+    ) -> version.Version | None:
         """
         Parse the current version string, handling special cases.
 
         Args:
             current_version: The current version string
+            quiet: Skip custom builds instead of asking whether to update them
 
         Returns:
-            Parsed version object
+            Parsed version object, or None when the check should stop
         """
         try:
             if current_version == "Unknown version":
                 logger.warning(
                     f"Current version is: {current_version}, assuming custom build"
                 )
+                if quiet:
+                    return None
                 answer = dialogue.show_dialogue_conditional(
                     title=self.tr(UNKNOWN_VERSION_TITLE),
                     text=self.tr(UNKNOWN_VERSION_TEXT),
@@ -891,105 +953,119 @@ class UpdateManager(QObject):
             logger.error(f"Unexpected error during update: {e}")
             raise UpdateError(f"Update failed: {e}") from e
 
-    def _get_latest_release_info(
-        self, needs_elevation: bool = False
-    ) -> ReleaseInfo | None:
-        """
-        Get the latest release information from GitHub API.
+    def _fetch_release_data(self) -> dict[str, Any]:
+        """Download the latest release record from the GitHub API.
 
         Authenticated with the user's GitHub token when one is configured,
         since the unauthenticated limit is only 60 requests per hour per IP
         and is easily exhausted behind shared or NAT'd networks (#2337).
 
+        :return: The release JSON.
+        :raises requests.RequestException: When the request fails.
+        """
+        token = getattr(self.settings, "github_token", "")
+        headers = {"Authorization": f"Bearer {token}"} if token else {}
+        # Use releases API for better asset information
+        response = http.get(GITHUB_API_URL, timeout=API_TIMEOUT, headers=headers)
+        response.raise_for_status()
+        return cast(dict[str, Any], response.json())
+
+    def _report_release_fetch_error(self, error: Exception, quiet: bool) -> None:
+        """Log a failed release fetch and, unless quiet, tell the user.
+
+        :param error: What :meth:`_fetch_release_data` raised.
+        :param quiet: Log only.
+        """
+        if isinstance(error, requests.HTTPError) and is_github_rate_limit_error(error):
+            logger.warning(f"GitHub API rate limit reached: {error}")
+            if quiet:
+                return
+            clock = rate_limit_reset_clock(getattr(error, "response", None))
+            reset = (
+                self.tr("Requests will be accepted again {when}.").format(when=clock)
+                if clock
+                else ""
+            )
+            dialogue.show_warning(
+                title=self.tr("RimSort Update Error"),
+                text=self.tr("GitHub's API rate limit has been reached"),
+                information=self.tr(
+                    "Too many requests were sent from your network, so GitHub"
+                    " declined this update check. Nothing is wrong with your"
+                    " installation.<br><br>{reset}<br><br>Adding a GitHub"
+                    " personal access token under Settings - Advanced raises"
+                    " the limit substantially and usually removes this."
+                ).format(reset=reset),
+            )
+        elif isinstance(error, requests.RequestException):
+            logger.warning(f"Failed to fetch release information: {error}")
+            if quiet:
+                return
+            dialogue.show_warning(
+                title=self.tr(ERR_API_CONNECTION_TITLE),
+                text=self.tr(ERR_API_CONNECTION_TEXT).format(error=str(error)),
+            )
+        else:
+            logger.warning(f"Unexpected error fetching release info: {error}")
+            if not quiet:
+                self.show_update_error()
+
+    def _get_latest_release_info(
+        self,
+        release_data: dict[str, Any],
+        needs_elevation: bool = False,
+        quiet: bool = False,
+    ) -> ReleaseInfo | None:
+        """
+        Read version and download asset out of a GitHub release record.
+
         Args:
+            release_data: The release JSON from the GitHub API
             needs_elevation: Whether elevation is needed (affects Windows asset selection)
+            quiet: Log problems instead of showing them
 
         Returns:
             Dictionary containing version, tag_name, download_url, and is_msi flag, or None if failed
         """
-        token = getattr(self.settings, "github_token", "")
-        headers = {"Authorization": f"Bearer {token}"} if token else {}
+        tag_name = release_data.get("tag_name", "")
+        # Normalize tag name by removing prefix 'v' if present
+        normalized_tag = TAG_PREFIX_PATTERN.sub("", str(tag_name))
+
+        # Parse version
         try:
-            # Use releases API for better asset information
-            response = http.get(GITHUB_API_URL, timeout=API_TIMEOUT, headers=headers)
-            response.raise_for_status()
-            release_data = response.json()
-
-            tag_name = release_data.get("tag_name", "")
-            # Normalize tag name by removing prefix 'v' if present
-            normalized_tag = TAG_PREFIX_PATTERN.sub("", str(tag_name))
-
-            # Parse version
-            try:
-                latest_version = version.parse(normalized_tag)
-            except Exception as e:
-                logger.warning(f"Failed to parse version from tag {tag_name}: {e}")
+            latest_version = version.parse(normalized_tag)
+        except Exception as e:
+            logger.warning(f"Failed to parse version from tag {tag_name}: {e}")
+            if not quiet:
                 self.show_update_error()
-                return None
+            return None
 
-            # Get platform-specific download URL
-            download_info = self._get_platform_download_url(
-                release_data.get("assets", []), needs_elevation
+        # Get platform-specific download URL
+        download_info = self._get_platform_download_url(
+            release_data.get("assets", []), needs_elevation
+        )
+        if not download_info:
+            system_info = (
+                f"{platform.system()} {platform.architecture()[0]} {platform.machine()}"
             )
-            if not download_info:
-                system_info = f"{platform.system()} {platform.architecture()[0]} {platform.machine()}"
+            logger.warning(f"No release asset matches {system_info}")
+            if not quiet:
                 dialogue.show_warning(
                     title=self.tr(ERR_NO_VALID_RELEASE_TITLE),
                     text=self.tr(ERR_NO_VALID_RELEASE_TEXT).format(
                         system_info=system_info
                     ),
                 )
-                return None
+            return None
 
-            return {
-                "version": latest_version,
-                "tag_name": tag_name,
-                "download_url": download_info["url"],
-                "is_msi": download_info.get("is_msi", False),
-                "is_appimage": download_info.get("is_appimage", False),
-                "is_tar_gz": download_info.get("is_tar_gz", False),
-            }
-
-        except requests.HTTPError as e:
-            if is_github_rate_limit_error(e):
-                logger.warning(f"GitHub API rate limit reached: {e}")
-                clock = rate_limit_reset_clock(getattr(e, "response", None))
-                reset = (
-                    self.tr("Requests will be accepted again {when}.").format(
-                        when=clock
-                    )
-                    if clock
-                    else ""
-                )
-                dialogue.show_warning(
-                    title=self.tr("RimSort Update Error"),
-                    text=self.tr("GitHub's API rate limit has been reached"),
-                    information=self.tr(
-                        "Too many requests were sent from your network, so GitHub"
-                        " declined this update check. Nothing is wrong with your"
-                        " installation.<br><br>{reset}<br><br>Adding a GitHub"
-                        " personal access token under Settings - Advanced raises"
-                        " the limit substantially and usually removes this."
-                    ).format(reset=reset),
-                )
-            else:
-                logger.warning(f"Failed to fetch release information: {e}")
-                dialogue.show_warning(
-                    title=self.tr(ERR_API_CONNECTION_TITLE),
-                    text=self.tr(ERR_API_CONNECTION_TEXT).format(error=str(e)),
-                )
-            return None
-        except requests.RequestException as e:
-            logger.warning(f"Failed to fetch release information: {e}")
-            dialogue.show_warning(
-                title=self.tr(ERR_API_CONNECTION_TITLE),
-                text=self.tr(ERR_API_CONNECTION_TEXT).format(error=str(e)),
-            )
-            return None
-        except Exception as e:
-            logger.warning(f"Unexpected error fetching release info: {e}")
-            self.show_update_error()
-            return None
+        return {
+            "version": latest_version,
+            "tag_name": tag_name,
+            "download_url": download_info["url"],
+            "is_msi": download_info.get("is_msi", False),
+            "is_appimage": download_info.get("is_appimage", False),
+            "is_tar_gz": download_info.get("is_tar_gz", False),
+        }
 
     def _asset_matches(
         self,

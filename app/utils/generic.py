@@ -729,15 +729,15 @@ def find_steam_rimworld(steam_folder: Path | str) -> str:
 INTERNET_CHECK_TIMEOUT_S = 3
 
 
-def check_internet_connection(timeout: float = INTERNET_CHECK_TIMEOUT_S) -> bool:
-    """
-    Check if there is an active internet connection by verifying access to Steam and GitHub.
+def probe_internet_connection(
+    timeout: float = INTERNET_CHECK_TIMEOUT_S,
+) -> list[str]:
+    """Try to reach Steam and GitHub, stopping at the first host that answers.
 
-    Runs on the GUI thread at its call sites, so the timeout bounds how long the
-    UI can stall when the network silently drops packets.
+    Shows nothing, so it is safe to call from a worker thread.
 
     :param timeout: Timeout in seconds for each connection attempt
-    :return: True if at least one service is accessible, False otherwise
+    :return: Hosts that failed, or an empty list when one host was reachable
     """
     urls = [
         "https://steamcommunity.com",
@@ -750,7 +750,7 @@ def check_internet_connection(timeout: float = INTERNET_CHECK_TIMEOUT_S) -> bool
         try:
             http.head(url, timeout=timeout)
             logger.debug(f"Internet connection verified via {url}")
-            return True
+            return []
         except requests.exceptions.RequestException as e:
             logger.debug(f"Connection to {url} failed: {e}")
             failed_urls.append(url)
@@ -758,8 +758,25 @@ def check_internet_connection(timeout: float = INTERNET_CHECK_TIMEOUT_S) -> bool
     logger.error(
         f"No internet connection detected. Failed to reach: {', '.join(failed_urls)}"
     )
-    dialogue.show_internet_connection_error(failed_urls=failed_urls)
-    return False
+    return failed_urls
+
+
+def check_internet_connection(timeout: float = INTERNET_CHECK_TIMEOUT_S) -> bool:
+    """
+    Check if there is an active internet connection by verifying access to Steam and GitHub.
+
+    Runs on the GUI thread at its call sites, so the timeout bounds how long the
+    UI can stall when the network silently drops packets. Tells the user when
+    nothing was reachable.
+
+    :param timeout: Timeout in seconds for each connection attempt
+    :return: True if at least one service is accessible, False otherwise
+    """
+    failed_urls = probe_internet_connection(timeout)
+    if failed_urls:
+        dialogue.show_internet_connection_error(failed_urls=failed_urls)
+        return False
+    return True
 
 
 def restart_application() -> None:

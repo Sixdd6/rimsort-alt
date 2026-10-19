@@ -171,6 +171,7 @@ class MainContent(QObject):
         self.steamcmd_runner: RunnerPanel | None = None
         # Replacement PFID -> original mod paths to swap out once it is installed
         self._pending_replacements: dict[str, list[str]] = {}
+        self._update_manager: UpdateManager | None = None
         self.steamcmd_wrapper = SteamcmdInterface.instance()
         self._import_export_service = ImportExportService(
             self.metadata_controller, self.settings
@@ -215,6 +216,9 @@ class MainContent(QObject):
     def _connect_signals(self) -> None:
         EventBus().settings_have_changed.connect(self._on_settings_have_changed)
         EventBus().do_check_for_application_update.connect(self._do_check_for_update)
+        EventBus().do_check_for_application_update_silently.connect(
+            self._do_check_for_update_silently
+        )
         EventBus().do_open_mod_list.connect(self._do_import_list_file_xml)
         EventBus().do_append_mod_list.connect(self._do_append_list_file_xml)
         EventBus().do_import_mod_list_from_rentry.connect(self._do_import_list_rentry)
@@ -882,12 +886,23 @@ class MainContent(QObject):
         self._insert_data_into_lists(active_mods_uuids, inactive_mods_uuids)
         self._apply_pending_replacements()
 
-    def _do_check_for_update(self) -> None:
+    def _do_check_for_update(self, quiet: bool = False) -> None:
         """
         Check for RimSort updates using UpdateManager.
+
+        The manager is kept on the panel because its network check runs on a
+        worker thread and reports back later.
+
+        :param quiet: Automatic start-up check: only an available update is shown.
         """
-        update_manager = UpdateManager(self.settings, self, self.mod_info_panel)
-        update_manager.do_check_for_update()
+        if self._update_manager is not None and self._update_manager.is_checking:
+            logger.info("Update check already in progress, ignoring request")
+            return
+        self._update_manager = UpdateManager(self.settings, self, self.mod_info_panel)
+        self._update_manager.do_check_for_update(quiet=quiet)
+
+    def _do_check_for_update_silently(self) -> None:
+        self._do_check_for_update(quiet=True)
 
     def __do_get_github_release_info(self) -> dict[str, Any]:
         # Parse latest release

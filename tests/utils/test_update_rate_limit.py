@@ -105,6 +105,24 @@ class TestUpdateCheckUsesToken:
         manager.settings.github_token = token
         return manager
 
+    @staticmethod
+    def _fetch_and_report(manager: Any, error: Exception, quiet: bool) -> Any:
+        """Run a failing fetch through the reporter; returns the warning mock."""
+        response = MagicMock()
+        response.raise_for_status.side_effect = error
+        response.headers = {}
+        with (
+            patch.object(update_utils.http, "get", return_value=response),
+            patch.object(update_utils.dialogue, "show_warning") as warn,
+        ):
+            try:
+                manager._fetch_release_data()
+            except Exception as e:
+                manager._report_release_fetch_error(e, quiet)
+            else:
+                raise AssertionError("fetch was expected to fail")
+        return warn
+
     def _response(self) -> Any:
         response = MagicMock()
         response.json.return_value = {"tag_name": "v1.0.0", "assets": []}
@@ -118,9 +136,8 @@ class TestUpdateCheckUsesToken:
             patch.object(
                 update_utils.http, "get", return_value=self._response()
             ) as get,
-            patch.object(update_utils.dialogue, "show_warning"),
         ):
-            manager._get_latest_release_info()
+            manager._fetch_release_data()
 
         headers = get.call_args.kwargs.get("headers", {})
         assert headers == {"Authorization": "Bearer ghp_secret"}
@@ -132,24 +149,15 @@ class TestUpdateCheckUsesToken:
             patch.object(
                 update_utils.http, "get", return_value=self._response()
             ) as get,
-            patch.object(update_utils.dialogue, "show_warning"),
         ):
-            manager._get_latest_release_info()
+            manager._fetch_release_data()
 
         assert get.call_args.kwargs.get("headers", {}) == {}
 
     def test_rate_limit_shows_actionable_dialog(self) -> None:
-        manager = self._manager("")
-        response = MagicMock()
-        response.json.return_value = {}
-        response.raise_for_status.side_effect = _http_error(403, _RATE_LIMIT_BODY)
-        response.headers = {}
-
-        with (
-            patch.object(update_utils.http, "get", return_value=response),
-            patch.object(update_utils.dialogue, "show_warning") as warn,
-        ):
-            assert manager._get_latest_release_info() is None
+        warn = self._fetch_and_report(
+            self._manager(""), _http_error(403, _RATE_LIMIT_BODY), quiet=False
+        )
 
         warn.assert_called_once()
         kwargs = warn.call_args.kwargs
@@ -157,16 +165,15 @@ class TestUpdateCheckUsesToken:
         assert "Settings - Advanced" in kwargs["information"]
 
     def test_other_errors_keep_generic_message(self) -> None:
-        manager = self._manager("")
-        response = MagicMock()
-        response.raise_for_status.side_effect = _http_error(404)
-
-        with (
-            patch.object(update_utils.http, "get", return_value=response),
-            patch.object(update_utils.dialogue, "show_warning") as warn,
-        ):
-            assert manager._get_latest_release_info() is None
+        warn = self._fetch_and_report(self._manager(""), _http_error(404), quiet=False)
 
         kwargs = warn.call_args.kwargs
         assert "Failed to connect to GitHub API" in kwargs["text"]
         assert kwargs["title"] == update_utils.ERR_API_CONNECTION_TITLE
+
+    def test_quiet_rate_limit_is_only_logged(self) -> None:
+        warn = self._fetch_and_report(
+            self._manager(""), _http_error(403, _RATE_LIMIT_BODY), quiet=True
+        )
+
+        warn.assert_not_called()

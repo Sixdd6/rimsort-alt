@@ -41,6 +41,7 @@ def test_parse_current_version_no_longer_degrades_edge_builds_to_zero() -> None:
     manager = _bare_manager()
     parsed = manager._parse_current_version("v1.18.0-edge5+8ba380d")
 
+    assert parsed is not None
     assert parsed == version.parse("1.18.0.dev5+8ba380d")
     # An Edge build must not be offered the stable release it was built after
     assert parsed >= version.parse("1.17.0")

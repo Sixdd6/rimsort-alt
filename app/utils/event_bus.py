@@ -134,6 +134,7 @@ class EventBus(QObject):
 
     # Help Menu bar signals
     do_check_for_application_update = Signal()
+    do_check_for_application_update_silently = Signal()
 
     # Loading animation signals
     do_threaded_loading_animation = Signal(str, object, str)

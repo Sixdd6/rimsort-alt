@@ -341,7 +341,7 @@ class MainWindow(QMainWindow):
             self.settings.save()
         # IF CHECK FOR UPDATE ON STARTUP...
         if self.settings.check_for_update_startup:
-            EventBus().do_check_for_application_update.emit()
+            EventBus().do_check_for_application_update_silently.emit()
         # Delete outdated entries in aux DB
         EventBus().do_delete_outdated_entries_in_aux_db.emit()
 
