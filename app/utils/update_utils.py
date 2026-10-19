@@ -61,6 +61,7 @@ APPIMAGE_EXTENSION = ".AppImage"
 DOWNLOAD_CHUNK_SIZE = 131072  # 128KB for better performance
 MIN_UPDATE_SIZE = 1024  # Minimum reasonable size for an app update
 UPDATER_LOG_FILENAME = "updater.log"
+UPDATE_TEMP_DIR_PREFIX = "RimSort_update_"
 
 # Windows protected paths (application cannot write to these)
 WINDOWS_PROTECTED_PATHS = [
@@ -563,6 +564,7 @@ class UpdateManager(QObject):
         # Progress window for update operations
         self._progress_widget: TaskProgressWindow | None = None
         self._release_check_thread: WorkThread | None = None
+        self._update_launched = False
         self._check_started = datetime.now()  # noqa: DTZ005
 
     def _check_needs_elevation(self) -> bool:
@@ -1295,6 +1297,15 @@ class UpdateManager(QObject):
     def _on_download_cancel(self) -> None:
         self._download_cancelled = True
 
+    def _connect_extraction_cancel(
+        self, extract_thread: ZipExtractThread | TarExtractThread
+    ) -> None:
+        """Let the progress window's Cancel button stop ``extract_thread``."""
+        if self._progress_widget is None:
+            return
+        self._progress_widget.cancel_requested.connect(self._on_download_cancel)
+        self._progress_widget.cancel_requested.connect(extract_thread.stop)
+
     def _download_update_worker(self, url: str) -> None:
         try:
             self._download_update(url)
@@ -1418,18 +1429,6 @@ class UpdateManager(QObject):
 
             if answer != QMessageBox.StandardButton.Yes:
                 logger.info("User declined update")
-                # Clean up the staged AppImage file if the user declined
-                if is_appimage and update_source_path.exists():
-                    try:
-                        update_source_path.unlink()
-                        logger.debug(
-                            f"Cleaned up declined AppImage update: {update_source_path}"
-                        )
-                    except OSError as e:
-                        logger.warning(f"Failed to clean up {update_source_path}: {e}")
-                # Restore panel if it was hidden
-                if self.mod_info_panel:
-                    self.mod_info_panel.info_panel_frame.show()
                 return
 
             # AppImage updates use .bak rename as the backup — skip ZIP backup
@@ -1458,12 +1457,15 @@ class UpdateManager(QObject):
                 information=f"Error: {e!s}<br>URL: {download_url}",
             )
         except UpdateExtractionError as e:
-            logger.exception("Update extraction failed")
-            dialogue.show_warning(
-                title=self.tr(ERR_EXTRACTION_FAILED_TITLE),
-                text=self.tr(ERR_EXTRACTION_FAILED_TEXT),
-                information=f"Error: {e!s}",
-            )
+            if self._download_cancelled:
+                logger.info("Update cancelled by user during extraction")
+            else:
+                logger.exception("Update extraction failed")
+                dialogue.show_warning(
+                    title=self.tr(ERR_EXTRACTION_FAILED_TITLE),
+                    text=self.tr(ERR_EXTRACTION_FAILED_TEXT),
+                    information=f"Error: {e!s}",
+                )
         except UpdateScriptLaunchError as e:
             logger.exception("Update script launch failed")
             dialogue.show_warning(
@@ -1480,6 +1482,8 @@ class UpdateManager(QObject):
                 details=traceback.format_exc(),
             )
         finally:
+            if not self._update_launched:
+                self._discard_update_files()
             # Always restore the panel if it was hidden
             if self.mod_info_panel:
                 try:
@@ -1488,6 +1492,28 @@ class UpdateManager(QObject):
                         self.main_content.disable_enable_widgets_signal.emit(True)
                 except Exception:  # noqa: S110
                     pass
+
+    def _discard_update_files(self) -> None:
+        """Delete what the update staged on disk once it is no longer wanted.
+
+        That is the extraction folder in the temp directory (also holding a
+        saved MSI), or the ``.new`` file written next to the running AppImage.
+        """
+        path = self._extracted_path
+        self._extracted_path = None
+        self._update_content = None
+        if path is None:
+            return
+        if path.is_file() and path.parent.name.startswith(UPDATE_TEMP_DIR_PREFIX):
+            path = path.parent
+        try:
+            if path.is_dir():
+                shutil.rmtree(path)
+            elif path.exists():
+                path.unlink()
+            logger.debug(f"Removed unused update files: {path}")
+        except OSError as e:
+            logger.warning(f"Failed to remove update files {path}: {e}")
 
     def _get_file_size(self, url: str) -> int:
         """
@@ -1653,7 +1679,7 @@ class UpdateManager(QObject):
         """
         temp_base = (
             Path(gettempdir())
-            / f"RimSort_update_{datetime.now().strftime('%Y%m%d_%H%M%S')}"  # noqa: DTZ005
+            / f"{UPDATE_TEMP_DIR_PREFIX}{datetime.now().strftime('%Y%m%d_%H%M%S')}"  # noqa: DTZ005
         )
         temp_base.mkdir(exist_ok=True)
         return temp_base
@@ -1746,6 +1772,7 @@ class UpdateManager(QObject):
                 overwrite_all=True,
                 delete=True,
             )
+            self._connect_extraction_cancel(extract_thread)
             extract_thread.progress.connect(on_extraction_progress)
             extract_thread.finished.connect(on_extraction_finished)
             extract_thread.start()
@@ -1865,6 +1892,7 @@ class UpdateManager(QObject):
                 tar_path=str(temp_tar_path),
                 target_path=str(temp_base),
             )
+            self._connect_extraction_cancel(extract_thread)
             extract_thread.progress.connect(on_extraction_progress)
             extract_thread.finished.connect(on_extraction_finished)
             extract_thread.start()
@@ -2352,6 +2380,7 @@ class UpdateManager(QObject):
             logger.debug(f"External updater script launched with PID: {p.pid}")
             logger.debug(f"Arguments used: {args_repr}")
 
+            self._update_launched = True
             # Give subprocess time to initialize before exit
             time.sleep(1)
 
@@ -2588,6 +2617,7 @@ class UpdateManager(QObject):
             self.update_progress.emit(100, "Update launched!")
             logger.info("MSI launched, exiting RimSort to allow file replacement")
 
+            self._update_launched = True
             # Give subprocess time to initialize before exit
             time.sleep(1)
 
