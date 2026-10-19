@@ -402,11 +402,12 @@ def _hover(view: Any, pos: Any) -> None:
 def test_hovering_a_mod_shows_its_preview_beside_the_row(
     qtbot: Any, mock_metadata_controller: MagicMock, tmp_path: Path
 ) -> None:
-    from app.views.mod_table import IDENTIFIERS_ROLE
+    from PySide6.QtWidgets import QApplication
+
+    from app.views.mod_table import IDENTIFIERS_ROLE, preview_popup_position
 
     mods, details = _many_mods_with_previews(tmp_path, count=3)
     panel = _make_panel(qtbot, mock_metadata_controller, mods, details, [])
-    # Narrow enough that the popup fits to the right on the offscreen screen
     panel.resize(600, 400)
     _populate(qtbot, panel)
     qtbot.wait(50)
@@ -420,8 +421,15 @@ def test_hovering_a_mod_shows_its_preview_beside_the_row(
         lambda: panel._thumbnails.popup.image.pixmap().width() == 32, timeout=3000
     )
     assert "Published File ID: 0" in panel._thumbnails.popup.text.text()
-    cell_right = view.viewport().mapToGlobal(view.visualRect(name_index).topRight())
-    assert panel._thumbnails.popup.x() > cell_right.x()
+    # Beside the row, flipped or clamped to fit whatever screen the test runs on
+    popup = panel._thumbnails.popup
+    cell = view.visualRect(name_index)
+    cell.moveTopLeft(view.viewport().mapToGlobal(cell.topLeft()))
+    screen = QApplication.screenAt(cell.center()) or QApplication.primaryScreen()
+    expected = preview_popup_position(cell, popup.size(), screen.availableGeometry())
+    # The window system may nudge a popup by a pixel or two
+    assert abs(popup.x() - expected.x()) <= 2
+    assert abs(popup.y() - expected.y()) <= 2
 
     group_index = panel.editor_model.index(0, ColumnIndex.NAME.value)
     _hover(view, view.visualRect(group_index).center())

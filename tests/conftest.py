@@ -38,6 +38,21 @@ def _block_steam_urls(request: pytest.FixtureRequest) -> Generator[None]:
 
 
 @pytest.fixture(autouse=True)
+def _no_workshop_preview_lookups(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Stop the Workshop preview cache from calling the Steam Web API.
+
+    Panels that show uninstalled mods look their previews up in the
+    background. Offline (e.g. in the Nix sandbox) every lookup retries for
+    tens of seconds and starves the thread pools other tests wait on.
+    Tests of the lookup itself patch it again.
+    """
+    monkeypatch.setattr(
+        "app.utils.workshop_previews.ISteamRemoteStorage_GetPublishedFileDetails",
+        lambda *_args, **_kwargs: ([], [], []),
+    )
+
+
+@pytest.fixture(autouse=True)
 def auto_accept_dialogs(monkeypatch: pytest.MonkeyPatch) -> None:
     """
     Automatically accept all QDialog exec_ calls during tests to prevent blocking.

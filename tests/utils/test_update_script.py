@@ -89,7 +89,9 @@ def test_failed_copy_leaves_the_old_version_untouched(
     assert "Failed to copy update files" in log.read_text()
 
 
-@pytest.mark.skipif(os.geteuid() == 0, reason="root can write anywhere")
+@pytest.mark.skipif(
+    hasattr(os, "geteuid") and os.geteuid() == 0, reason="root can write anywhere"
+)
 def test_unwritable_parent_falls_back_to_an_in_place_sync(
     shims: Path, tmp_path: Path
 ) -> None:
