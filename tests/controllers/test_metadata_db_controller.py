@@ -54,7 +54,7 @@ def test_get_many_returns_existing_entries_only(
 ) -> None:
     with temp_db.Session() as session:
         temp_db.get_or_create(session, "/test/a")
-        temp_db.get_or_create(session, "/test/b")
+        temp_db.get_or_create(session, Path("/test/b"))
         session.commit()
 
     with temp_db.Session() as session:

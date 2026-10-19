@@ -65,7 +65,9 @@ def _watch(mod_list: ModListWidget) -> _PaintCounter:
 
 def _sort_to(mc: MainContent, new_order: list[str]) -> None:
     with patch("app.views.main_content_panel.Sorter") as sorter:
-        sorter.return_value.sort.return_value = (True, new_order)
+        # The sorter speaks str(mod_path), which uses backslashes on Windows
+        paths = [str(Path(uuid)) for uuid in new_order]
+        sorter.return_value.sort.return_value = (True, paths)
         mc._do_sort(check_deps=False)
 
 
