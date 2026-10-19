@@ -45,7 +45,10 @@ VERSION_PATTERN = re.compile(r"v?\d+[\.\-_]\d+")
 TAG_PREFIX_PATTERN = re.compile(r"^v", re.IGNORECASE)
 
 # API and network constants
-GITHUB_API_URL = "https://api.github.com/repos/RimSort/RimSort/releases/latest"
+# GitHub repository whose releases this build updates from
+UPDATE_REPOSITORY = "Sixdd6/RimSort"
+GITHUB_API_URL = f"https://api.github.com/repos/{UPDATE_REPOSITORY}/releases/latest"
+RELEASES_PAGE_URL = f"https://github.com/{UPDATE_REPOSITORY}/releases"
 # CI's Edge/auto build versions: v<major>.<minor>.<patch>-edge<n>[+<sha>]
 _PRERELEASE_BUILD_RE = re.compile(
     r"^(?P<core>\d+\.\d+\.\d+)-(?:edge|auto)(?P<n>\d+)(?P<local>\+[0-9A-Za-z.]+)?$"
@@ -2787,6 +2790,6 @@ class UpdateManager(QObject):
         dialogue.show_warning(
             title=self.tr("Unable to retrieve latest release information"),
             text=self.tr(
-                "Please check your internet connection and try again, You can also check 'https://github.com/RimSort/RimSort/releases' directly."
-            ),
+                "Please check your internet connection and try again. You can also check {releases_url} directly."
+            ).format(releases_url=RELEASES_PAGE_URL),
         )

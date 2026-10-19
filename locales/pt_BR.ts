@@ -6432,7 +6432,7 @@ Para obter suporte, acesse: {support_url}</translation>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Please check your internet connection and try again, You can also check &apos;https://github.com/RimSort/RimSort/releases&apos; directly.</source>
+        <source>Please check your internet connection and try again. You can also check {releases_url} directly.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

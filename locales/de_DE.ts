@@ -6420,7 +6420,7 @@ Bitte wenden Sie sich an uns, um Unterstützung bei:  zu erhalten {development_g
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Please check your internet connection and try again, You can also check &apos;https://github.com/RimSort/RimSort/releases&apos; directly.</source>
+        <source>Please check your internet connection and try again. You can also check {releases_url} directly.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
