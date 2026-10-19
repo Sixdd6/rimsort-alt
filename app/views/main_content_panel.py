@@ -905,32 +905,6 @@ class MainContent(QObject):
     def _do_check_for_update_silently(self) -> None:
         self._do_check_for_update(quiet=True)
 
-    def __do_get_github_release_info(self) -> dict[str, Any]:
-        # Parse latest release
-        url = "https://api.github.com/repos/RimSort/RimSort/releases/latest"
-        logger.debug(f"Requesting GitHub release info from: {url}")
-
-        raw = http.get(url, timeout=10)
-
-        # Check for HTTP errors
-        if raw.status_code != 200:
-            logger.warning(f"GitHub API returned status code {raw.status_code}")
-            if raw.status_code == 403:
-                logger.warning("Possible rate limiting by GitHub API")
-            raise Exception(  # noqa: TRY002
-                f"GitHub API returned status code {raw.status_code}: {raw.text}"
-            )
-
-        # Try to parse JSON response
-        try:
-            response_json = raw.json()
-            logger.debug("Successfully parsed GitHub API response")
-            return response_json
-        except Exception as e:
-            logger.error(f"Failed to parse GitHub API response: {e}")
-            logger.debug(f"Raw response: {raw.text}")
-            raise
-
     # INFO PANEL ANIMATIONS
 
     @Slot(str, object, str)

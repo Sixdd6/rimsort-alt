@@ -83,9 +83,6 @@ BACKUP_TIMEOUT_SECONDS = 600  # 10 minutes for backup
 EXTRACTION_THREAD_TIMEOUT_MS = 5000  # 5 seconds for thread cleanup
 THREAD_JOIN_TIMEOUT = 5  # 5 seconds for thread join
 
-# Platform-specific constants
-# Note: TEMP_DIR_DARWIN and TEMP_DIR_DEFAULT are unused and can be removed
-
 # No Version Dialog Constants
 UNKNOWN_VERSION_TITLE = "Unknown Version Detected"
 UNKNOWN_VERSION_TEXT = "Could not find version Information of RimSort, This may indicate that the application is not an offical release and may be a custom build."
@@ -199,11 +196,9 @@ class ScriptConfig:
     def __init__(
         self,
         script_name: str,
-        start_new_session: bool | None,
         platform: str,
     ) -> None:
         self.script_name = script_name
-        self.start_new_session = start_new_session
         self.platform = platform
 
     def get_script_path(self) -> Path:
@@ -537,17 +532,14 @@ class UpdateManager(QObject):
     _script_configs: dict[str, ScriptConfig] = {  # noqa: RUF012
         "Darwin": ScriptConfig(
             script_name="update.sh",
-            start_new_session=False,
             platform="Darwin",
         ),
         "Windows": ScriptConfig(
             script_name="update.bat",
-            start_new_session=None,  # Not used on Windows
             platform="Windows",
         ),
         "Linux": ScriptConfig(
             script_name="update.sh",
-            start_new_session=True,
             platform="Linux",
         ),
     }
@@ -1408,16 +1400,7 @@ class UpdateManager(QObject):
                 download_result["success"] = success
                 download_result["error"] = error
                 loop.quit()
-                try:
-                    if self._progress_widget:
-                        self._progress_widget.close()
-                        # Remove from panel if it was added there
-                        if self.mod_info_panel:
-                            self.mod_info_panel.panel.removeWidget(
-                                self._progress_widget
-                            )
-                except Exception:  # noqa: S110
-                    pass
+                self._hide_progress_widget(self._progress_widget)
 
             self.download_complete.connect(on_complete)
 
@@ -1426,15 +1409,7 @@ class UpdateManager(QObject):
             )
             worker.start()
 
-            # Show progress widget in panel or as standalone window
-            if self.mod_info_panel:
-                self.mod_info_panel.info_panel_frame.hide()
-                if hasattr(self.main_content, "disable_enable_widgets_signal"):
-                    self.main_content.disable_enable_widgets_signal.emit(False)
-                self.mod_info_panel.panel.addWidget(self._progress_widget)
-                self._progress_widget.show()
-            else:
-                self._progress_widget.show()
+            self._show_progress_widget(self._progress_widget)
 
             # Wait for download to complete without blocking event loop
             loop.exec()
@@ -2355,8 +2330,8 @@ class UpdateManager(QObject):
                 )
                 return
 
-            script_path, args_repr, _start_new_session, install_dir = (
-                self._get_script_info(update_source_path, log_path, needs_elevation)
+            script_path, args_repr, install_dir = self._get_script_info(
+                update_source_path, log_path, needs_elevation
             )
 
             # Validate script exists before proceeding
@@ -2711,9 +2686,9 @@ class UpdateManager(QObject):
 
     def _get_script_info(
         self, update_source_path: Path, log_path: Path, needs_elevation: bool
-    ) -> tuple[Path, str | list[str], bool | None, Path]:
+    ) -> tuple[Path, str | list[str], Path]:
         """
-        Get the script path, arguments representation, and session flag for the platform.
+        Get the script path, arguments representation and install directory for the platform.
 
         Args:
             update_source_path: Path to the extracted update directory
@@ -2721,7 +2696,7 @@ class UpdateManager(QObject):
             needs_elevation: Whether to run with elevated privileges
 
         Returns:
-            Tuple of (script_path, args_repr, start_new_session, install_dir)
+            Tuple of (script_path, args_repr, install_dir)
         """
         config = self._script_configs[self._system]
         script_path = config.get_script_path()
@@ -2740,9 +2715,7 @@ class UpdateManager(QObject):
             install_dir,
             update_manager=self,
         )
-        start_new_session = config.start_new_session
-
-        return script_path, args_repr, start_new_session, install_dir
+        return script_path, args_repr, install_dir
 
     def _extract_update_with_progress(
         self, is_msi: bool = False, is_tar_gz: bool = False
@@ -2750,22 +2723,16 @@ class UpdateManager(QObject):
         """
         Extract or prepare the update with a progress window.
 
-        For ZIP files, _extract_zip creates its own progress window with ZipExtractThread.
-        MSI preparation is instant (just writes bytes) so no UI needed.
-        Extraction runs on main thread to ensure Qt operations work correctly.
+        For ZIP and tar.gz files the extraction helpers drive their own
+        progress window and worker thread; MSI preparation is instant (just
+        writes bytes) so no UI is needed. Runs on the GUI thread so the Qt
+        widgets can be created here.
 
         Args:
             is_msi: Whether the update is an MSI installer
             is_tar_gz: Whether the update is a tar.gz archive
         """
-        # Run extraction on main thread (Qt operations require main thread)
-        self._extracted_path = self._extract_update_thread_worker(is_msi, is_tar_gz)
-
-    def _extract_update_thread_worker(
-        self, is_msi: bool = False, is_tar_gz: bool = False
-    ) -> Path:
-        """Worker thread for extraction."""
-        return self._extract_update(is_msi, is_tar_gz)
+        self._extracted_path = self._extract_update(is_msi, is_tar_gz)
 
     def _show_progress_widget(
         self, progress_widget: TaskProgressWindow, cancellable: bool = True

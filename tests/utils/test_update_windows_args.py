@@ -11,7 +11,7 @@ from app.utils.update_utils import ScriptConfig
 
 
 def _config() -> ScriptConfig:
-    return ScriptConfig("update.bat", None, "Windows")
+    return ScriptConfig("update.bat", "Windows")
 
 
 def test_unelevated_windows_args_pass_the_install_folder() -> None:
