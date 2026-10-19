@@ -1,7 +1,7 @@
 from typing import Any
 
 from loguru import logger
-from PySide6.QtCore import QObject
+from PySide6.QtCore import QObject, Qt
 from PySide6.QtWidgets import QListWidgetItem
 
 
@@ -13,6 +13,27 @@ class CustomListWidgetItem(QListWidgetItem):
     def __init__(self, *args: Any) -> None:
         self._qobject = QObject()
         QListWidgetItem.__init__(self, *args)
+
+    @classmethod
+    def from_item_data(
+        cls, item_data: dict[int, Any], flags: Qt.ItemFlag
+    ) -> CustomListWidgetItem:
+        """Build a CustomListWidgetItem carrying another item's data.
+
+        Used for items Qt creates itself, such as those dropped from the
+        other mod list. PySide6 6.12 removed the ``QListWidgetItem`` copy
+        constructor, so the data is copied role by role; Python objects
+        stored in a role are kept as the same object.
+
+        :param item_data: Role to value, as returned by the model's ``itemData``.
+        :param flags: The source item's flags.
+        :return: The new item, not yet in any list.
+        """
+        item = cls()
+        for role, value in item_data.items():
+            item.setData(role, value, avoid_emit=True)
+        item.setFlags(flags)
+        return item
 
     def setData(self, role: int, value: Any, avoid_emit: bool = False) -> None:
         """

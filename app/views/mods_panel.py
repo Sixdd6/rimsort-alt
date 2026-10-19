@@ -3071,9 +3071,12 @@ class ModListWidget(QListWidget):
         # already loaded. Each item index corresponds to a UUID index.
         for idx in range(first, last + 1):
             item = self.item(idx)
-            if not isinstance(item, CustomListWidgetItem):
-                # Convert to CustomListWidgetItem
-                item = CustomListWidgetItem(item)
+            if item is not None and not isinstance(item, CustomListWidgetItem):
+                # Items dropped from the other list arrive as plain QListWidgetItems
+                model = self.model()
+                item = CustomListWidgetItem.from_item_data(
+                    model.itemData(model.index(idx, 0)), item.flags()
+                )
                 self.replaceItemAtIndex(idx, item)
             if item:
                 data = item.data(Qt.ItemDataRole.UserRole)

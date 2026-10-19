@@ -5,7 +5,7 @@ from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
-from PySide6.QtCore import QEvent, QObject
+from PySide6.QtCore import QEvent, QObject, Qt
 
 from app.models.metadata.metadata_structure import AboutXmlMod, CaseInsensitiveStr
 from app.views.main_content_panel import MainContent
@@ -112,3 +112,30 @@ def test_sort_keeps_the_unchanged_inactive_list_in_place(
     assert inactive.item(0) is first_item
     assert inactive.paths == paths_before
     assert scrollbar.value() == scrolled_to
+
+
+def test_items_dropped_from_the_other_list_become_mod_items(
+    shown_content: tuple[MainContent, dict[str, AboutXmlMod]], qtbot: Any
+) -> None:
+    """A drop between the lists inserts plain QListWidgetItems; PySide6 6.12
+    has no copy constructor to convert them with, which crashed every drag."""
+    from PySide6.QtWidgets import QListWidgetItem
+
+    from app.utils.custom_list_widget_item import CustomListWidgetItem
+
+    mc, _mods = shown_content
+    active = mc.mods_panel.active_mods_list
+    source = mc.mods_panel.inactive_mods_list.item(0)
+    metadata = source.data(Qt.ItemDataRole.UserRole)
+    dropped = QListWidgetItem()
+    dropped.setData(Qt.ItemDataRole.UserRole, metadata)
+
+    active.insertItem(1, dropped)
+    # rowsInserted is handled through a queued connection
+    qtbot.waitUntil(lambda: isinstance(active.item(1), CustomListWidgetItem))
+
+    converted = active.item(1)
+    assert isinstance(converted, CustomListWidgetItem)
+    assert converted.data(Qt.ItemDataRole.UserRole) is metadata
+    assert active.paths[1] == metadata["path"]
+    assert active.count() == 4
