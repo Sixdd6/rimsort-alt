@@ -76,5 +76,5 @@ RimSort распространяется по [лицензии GPL-3.0](https:/
 Мы стремимся к дружелюбному сообществу.
 [См. наш Кодекс поведения](https://github.com/RimSort/RimSort/tree/main/CODE_OF_CONDUCT.md) в репозитории GitHub.
 
-[Wiki]: https://sixdd6.github.io/RimSort
-[Releases]: https://github.com/Sixdd6/RimSort/releases
+[Wiki]: https://sixdd6.github.io/rimsort-alt
+[Releases]: https://github.com/Sixdd6/rimsort-alt/releases

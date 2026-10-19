@@ -1,7 +1,7 @@
 title: RimSort Wiki
 description: A collection of guides, tutorials, and documentation for RimSort, an free, open source, multi-platform mod manager for RimWorld.
 theme: just-the-docs
-repository: Sixdd6/RimSort
+repository: Sixdd6/rimsort-alt
 
 languages: ["en", "zh-cn", "ru"]
 default_lang: "en"
@@ -29,7 +29,7 @@ nav_sort: case_sensitive # Capital letters sorted before lowercase
 # External navigation links
 nav_external_links:
   - title: Releases
-    url: https://github.com/Sixdd6/RimSort/releases
+    url: https://github.com/Sixdd6/rimsort-alt/releases
     hide_icon: false # set to true to hide the external link icon - defaults to false
     opens_in_new_tab: true # set to true to open this link in a new tab - defaults to false
   - title: RimSort on GitHub

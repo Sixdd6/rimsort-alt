@@ -46,7 +46,7 @@ TAG_PREFIX_PATTERN = re.compile(r"^v", re.IGNORECASE)
 
 # API and network constants
 # GitHub repository whose releases this build updates from
-UPDATE_REPOSITORY = "Sixdd6/RimSort"
+UPDATE_REPOSITORY = "Sixdd6/rimsort-alt"
 GITHUB_API_URL = f"https://api.github.com/repos/{UPDATE_REPOSITORY}/releases/latest"
 RELEASES_PAGE_URL = f"https://github.com/{UPDATE_REPOSITORY}/releases"
 # CI's Edge/auto build versions: v<major>.<minor>.<patch>-edge<n>[+<sha>]

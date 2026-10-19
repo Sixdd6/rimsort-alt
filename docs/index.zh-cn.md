@@ -85,8 +85,8 @@ RimSort 采用 [GPL-3.0 协议](https://github.com/RimSort/RimSort/tree/main/LIC
 我们旨在培养一个友好的社区。
 在 GitHub 仓库中 [查看我们的行为守则](https://github.com/RimSort/RimSort/tree/main/CODE_OF_CONDUCT.md)。
 
-[Wiki]: https://sixdd6.github.io/RimSort
+[Wiki]: https://sixdd6.github.io/rimsort-alt
 [Repo]: https://github.com/RimSort/RimSort
 [Issues]: https://github.com/RimSort/RimSort/issues
-[Releases]: https://github.com/Sixdd6/RimSort/releases
+[Releases]: https://github.com/Sixdd6/rimsort-alt/releases
 [Discord]: https://discord.gg/aV7g69JmR2
