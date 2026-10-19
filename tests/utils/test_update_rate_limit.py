@@ -169,7 +169,7 @@ class TestUpdateCheckUsesToken:
 
         kwargs = warn.call_args.kwargs
         assert "Failed to connect to GitHub API" in kwargs["text"]
-        assert kwargs["title"] == update_utils.ERR_API_CONNECTION_TITLE
+        assert kwargs["title"] == "RimSort Update Error"
 
     def test_quiet_rate_limit_is_only_logged(self) -> None:
         warn = self._fetch_and_report(

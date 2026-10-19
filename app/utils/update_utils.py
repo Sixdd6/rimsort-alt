@@ -83,33 +83,6 @@ BACKUP_TIMEOUT_SECONDS = 600  # 10 minutes for backup
 EXTRACTION_THREAD_TIMEOUT_MS = 5000  # 5 seconds for thread cleanup
 THREAD_JOIN_TIMEOUT = 5  # 5 seconds for thread join
 
-# No Version Dialog Constants
-UNKNOWN_VERSION_TITLE = "Unknown Version Detected"
-UNKNOWN_VERSION_TEXT = "Could not find version Information of RimSort, This may indicate that the application is not an offical release and may be a custom build."
-UNKNOWN_VERSION_INFO = "Are you sure you want to still update anyway?"
-
-# Standardized error messages
-ERR_UPDATE_SKIPPED_TITLE = "Update skipped"
-ERR_UPDATE_SKIPPED_TEXT = "You are running from Python interpreter."
-ERR_UPDATE_SKIPPED_INFO = "Skipping update check..."
-ERR_UPDATE_ERROR_TITLE = "RimSort Update Error"
-ERR_NO_VALID_RELEASE_TITLE = "RimSort Update Error"
-ERR_NO_VALID_RELEASE_TEXT = "Failed to find valid RimSort release for {system_info}"
-ERR_API_CONNECTION_TITLE = "RimSort Update Error"
-ERR_API_CONNECTION_TEXT = "Failed to connect to GitHub API: {error}"
-ERR_DOWNLOAD_FAILED_TITLE = "Download failed"
-ERR_DOWNLOAD_FAILED_TEXT = "Failed to download the update."
-ERR_EXTRACTION_FAILED_TITLE = "Extraction failed"
-ERR_EXTRACTION_FAILED_TEXT = "Failed to extract the downloaded update."
-ERR_BACKUP_FAILED_TITLE = "Backup failed"
-ERR_BACKUP_FAILED_TEXT = "Failed to create a backup before updating."
-ERR_LAUNCH_FAILED_TITLE = "Launch failed"
-ERR_LAUNCH_FAILED_TEXT = "Failed to launch the update script."
-ERR_UPDATE_FAILED_TITLE = "Update failed"
-ERR_UPDATE_FAILED_TEXT = "An unexpected error occurred during the update process."
-ERR_RETRIEVE_RELEASE_TITLE = "Unable to retrieve latest release information"
-ERR_RETRIEVE_RELEASE_TEXT = "Please check your internet connection and try again, You can also check 'https://github.com/RimSort/RimSort/releases' directly."
-
 if TYPE_CHECKING:
     from app.models.settings import Settings
 
@@ -758,9 +731,9 @@ class UpdateManager(QObject):
             )
             if not quiet:
                 dialogue.show_warning(
-                    title=self.tr(ERR_UPDATE_SKIPPED_TITLE),
-                    text=self.tr(ERR_UPDATE_SKIPPED_TEXT),
-                    information=self.tr(ERR_UPDATE_SKIPPED_INFO),
+                    title=self.tr("Update skipped"),
+                    text=self.tr("You are running from Python interpreter."),
+                    information=self.tr("Skipping update check..."),
                 )
             return False
         return True
@@ -808,8 +781,8 @@ class UpdateManager(QObject):
         except Exception as e:
             logger.exception("Update check failed")
             dialogue.show_warning(
-                title=self.tr(ERR_UPDATE_FAILED_TITLE),
-                text=self.tr(ERR_UPDATE_FAILED_TEXT),
+                title=self.tr("Update failed"),
+                text=self.tr("An unexpected error occurred during the update process."),
                 information=f"Unexpected error during update check: {e!s}",
                 details=traceback.format_exc(),
             )
@@ -916,9 +889,13 @@ class UpdateManager(QObject):
                 if quiet:
                     return None
                 answer = dialogue.show_dialogue_conditional(
-                    title=self.tr(UNKNOWN_VERSION_TITLE),
-                    text=self.tr(UNKNOWN_VERSION_TEXT),
-                    information=self.tr(UNKNOWN_VERSION_INFO),
+                    title=self.tr("Unknown Version Detected"),
+                    text=self.tr(
+                        "Could not find version Information of RimSort, This may indicate that the application is not an official release and may be a custom build."
+                    ),
+                    information=self.tr(
+                        "Are you sure you want to still update anyway?"
+                    ),
                 )
                 if answer == QMessageBox.StandardButton.Yes:
                     logger.info(f"User chose to update version: {current_version}")
@@ -1030,8 +1007,10 @@ class UpdateManager(QObject):
             if quiet:
                 return
             dialogue.show_warning(
-                title=self.tr(ERR_API_CONNECTION_TITLE),
-                text=self.tr(ERR_API_CONNECTION_TEXT).format(error=str(error)),
+                title=self.tr("RimSort Update Error"),
+                text=self.tr("Failed to connect to GitHub API: {error}").format(
+                    error=str(error)
+                ),
             )
         else:
             logger.warning(f"Unexpected error fetching release info: {error}")
@@ -1079,10 +1058,10 @@ class UpdateManager(QObject):
             logger.warning(f"No release asset matches {system_info}")
             if not quiet:
                 dialogue.show_warning(
-                    title=self.tr(ERR_NO_VALID_RELEASE_TITLE),
-                    text=self.tr(ERR_NO_VALID_RELEASE_TEXT).format(
-                        system_info=system_info
-                    ),
+                    title=self.tr("RimSort Update Error"),
+                    text=self.tr(
+                        "Failed to find valid RimSort release for {system_info}"
+                    ).format(system_info=system_info),
                 )
             return None
 
@@ -1492,8 +1471,8 @@ class UpdateManager(QObject):
         except UpdateDownloadError as e:
             logger.exception("Update download failed")
             dialogue.show_warning(
-                title=self.tr(ERR_DOWNLOAD_FAILED_TITLE),
-                text=self.tr(ERR_DOWNLOAD_FAILED_TEXT),
+                title=self.tr("Download failed"),
+                text=self.tr("Failed to download the update."),
                 information=f"Error: {e!s}<br>URL: {download_url}",
             )
         except UpdateExtractionError as e:
@@ -1502,22 +1481,22 @@ class UpdateManager(QObject):
             else:
                 logger.exception("Update extraction failed")
                 dialogue.show_warning(
-                    title=self.tr(ERR_EXTRACTION_FAILED_TITLE),
-                    text=self.tr(ERR_EXTRACTION_FAILED_TEXT),
+                    title=self.tr("Extraction failed"),
+                    text=self.tr("Failed to extract the downloaded update."),
                     information=f"Error: {e!s}",
                 )
         except UpdateScriptLaunchError as e:
             logger.exception("Update script launch failed")
             dialogue.show_warning(
-                title=self.tr(ERR_LAUNCH_FAILED_TITLE),
-                text=self.tr(ERR_LAUNCH_FAILED_TEXT),
+                title=self.tr("Launch failed"),
+                text=self.tr("Failed to launch the update script."),
                 information=f"Error: {e!s}",
             )
         except Exception as e:
             logger.exception("Unexpected update process failure")
             dialogue.show_warning(
-                title=self.tr(ERR_UPDATE_FAILED_TITLE),
-                text=self.tr(ERR_UPDATE_FAILED_TEXT),
+                title=self.tr("Update failed"),
+                text=self.tr("An unexpected error occurred during the update process."),
                 information=f"Error: {e!s}<br>URL: {download_url}",
                 details=traceback.format_exc(),
             )
@@ -2727,8 +2706,8 @@ class UpdateManager(QObject):
         # Asked on the GUI thread; the update must not touch files the backup
         # may still be reading
         answer = dialogue.show_dialogue_conditional(
-            title=self.tr(ERR_BACKUP_FAILED_TITLE),
-            text=self.tr(ERR_BACKUP_FAILED_TEXT),
+            title=self.tr("Backup failed"),
+            text=self.tr("Failed to create a backup before updating."),
             information=f"{error}",
         )
         if answer == QMessageBox.StandardButton.Yes:
@@ -2806,6 +2785,8 @@ class UpdateManager(QObject):
 
     def show_update_error(self) -> None:
         dialogue.show_warning(
-            title=self.tr(ERR_RETRIEVE_RELEASE_TITLE),
-            text=self.tr(ERR_RETRIEVE_RELEASE_TEXT),
+            title=self.tr("Unable to retrieve latest release information"),
+            text=self.tr(
+                "Please check your internet connection and try again, You can also check 'https://github.com/RimSort/RimSort/releases' directly."
+            ),
         )

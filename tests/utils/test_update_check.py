@@ -53,7 +53,7 @@ def test_running_from_source_is_silent_at_startup_and_told_on_request(
         manager.do_check_for_update(quiet=True)
         warn.assert_not_called()
         manager.do_check_for_update(quiet=False)
-    assert warn.call_args.kwargs["text"] == update_utils.ERR_UPDATE_SKIPPED_TEXT
+    assert warn.call_args.kwargs["text"] == "You are running from Python interpreter."
     assert manager._release_check_thread is None
 
 

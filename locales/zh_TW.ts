@@ -6388,16 +6388,96 @@ Please reach out to us for support at: {support_url}</source>
         <translation>下載Rimsort {tag_name}版本...</translation>
     </message>
     <message>
+        <source>Download failed</source>
+        <translation type="unfinished">下載失敗</translation>
+    </message>
+    <message>
+        <source>Failed to download the update.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Extraction failed</source>
+        <translation type="unfinished">解壓失敗</translation>
+    </message>
+    <message>
+        <source>Failed to extract the downloaded update.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Launch failed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Failed to launch the update script.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Creating backup... (this may take several minutes)</source>
         <translation>正在創建備份...（這可能需要幾分鐘）</translation>
+    </message>
+    <message>
+        <source>Backup failed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Failed to create a backup before updating.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Unable to retrieve latest release information</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Please check your internet connection and try again, You can also check &apos;https://github.com/RimSort/RimSort/releases&apos; directly.</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Update downloaded</source>
         <translation>更新下載</translation>
     </message>
     <message>
+        <source>Update skipped</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>You are running from Python interpreter.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Skipping update check...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Update failed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>An unexpected error occurred during the update process.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Unknown Version Detected</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Could not find version Information of RimSort, This may indicate that the application is not an official release and may be a custom build.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Are you sure you want to still update anyway?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>You are running RimSort {current_version}&lt;br&gt;Do you want to update now?</source>
         <translation>您正在執行 RimSort {current_version}&lt;br&gt;您想立即更新嗎？</translation>
+    </message>
+    <message>
+        <source>Failed to connect to GitHub API: {error}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Failed to find valid RimSort release for {system_info}</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Do you want to proceed with the update?</source>
