@@ -14,6 +14,10 @@ REM ========================================================================
 REM Get arguments
 set "TEMP_UPDATE_PATH=%~1"
 set "LOG_PATH=%~2"
+REM Install folder, passed by RimSort. This script may run from a copy in app
+REM storage (and elevated launches change directory), so %CD% is not reliable.
+set "INSTALL_DIR=%~3"
+if not defined INSTALL_DIR set "INSTALL_DIR=%CD%"
 
 REM Validate arguments
 if "%TEMP_UPDATE_PATH%" == "" (
@@ -35,8 +39,9 @@ if defined LOG_PATH (
     echo [%date% %time%] INFO: Temp update path: %TEMP_UPDATE_PATH%
 )
 
-REM Get current directory (should be application folder)
-set "current_dir=%CD%"
+REM Application folder to update (see INSTALL_DIR above)
+cd /d "%INSTALL_DIR%"
+set "current_dir=%INSTALL_DIR%"
 if "%current_dir:~-1%"=="\" (
     set "current_dir_no_slash=%current_dir:~0,-1%"
 ) else (

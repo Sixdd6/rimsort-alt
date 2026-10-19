@@ -320,14 +320,19 @@ class ScriptConfig:
             if needs_elevation:
                 # Properly escape paths for PowerShell with special characters and spaces
                 # Paths need to be quoted for cmd.exe which is the actual executor
-                script_dir = str(script_path.parent)
                 script_file = str(script_path)
                 temp_path = str(base_args[1])
                 log_path = str(base_args[2])
+                # The install folder is passed explicitly: the script is run from a
+                # copy in app storage, so neither %CD% nor the script's folder is it
+                install_dir = str(base_args[3])
 
                 # Build the cmd command with properly quoted arguments
                 # Using double quotes for cmd.exe path arguments
-                cmd_command = f'cd /d "{script_dir}" && "{script_file}" "{temp_path}" "{log_path}"'
+                cmd_command = (
+                    f'cd /d "{install_dir}" && "{script_file}" "{temp_path}" '
+                    f'"{log_path}" "{install_dir}"'
+                )
 
                 # Escape single quotes in cmd_command for PowerShell (double them)
                 cmd_command_escaped = cmd_command.replace("'", "''")
@@ -345,6 +350,7 @@ class ScriptConfig:
                     str(script_path),
                     str(base_args[1]),
                     str(base_args[2]),
+                    str(base_args[3]),
                 ]
         elif self.platform == "Linux":
             # Linux: Try direct bash execution first (primary method)
