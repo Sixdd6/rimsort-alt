@@ -42,6 +42,10 @@ TAG_PREFIX_PATTERN = re.compile(r"^v", re.IGNORECASE)
 
 # API and network constants
 GITHUB_API_URL = "https://api.github.com/repos/RimSort/RimSort/releases/latest"
+# CI's Edge/auto build versions: v<major>.<minor>.<patch>-edge<n>[+<sha>]
+_PRERELEASE_BUILD_RE = re.compile(
+    r"^(?P<core>\d+\.\d+\.\d+)-(?:edge|auto)(?P<n>\d+)(?P<local>\+[0-9A-Za-z.]+)?$"
+)
 API_TIMEOUT = 15
 DOWNLOAD_TIMEOUT = 30
 
@@ -763,6 +767,34 @@ class UpdateManager(QObject):
             "is_tar_gz": latest_release_info.get("is_tar_gz", False),
         }
 
+    @staticmethod
+    def normalize_version_string(raw: str) -> str:
+        """Turn a RimSort build version into a PEP 440 string.
+
+        CI stamps Edge and auto builds as ``v1.2.3-edge5`` / ``v1.2.3-auto5``
+        (``1.2.3`` being the next release, ``5`` the commits since the last
+        tag), optionally followed by ``+<sha>``. ``packaging`` rejects that
+        form, which used to make every Edge build parse as ``0.0.0`` and be
+        offered the latest stable as an "update". Here it becomes
+        ``1.2.3.dev5``: below the ``1.2.3`` stable it precedes, above the
+        previous stable.
+
+        :param raw: Version string from ``version.xml`` or a release tag.
+        :return: A string ``packaging.version.parse`` accepts.
+        """
+        text = raw.strip()
+        if text[:1] in ("v", "V"):
+            text = text[1:]
+        match = _PRERELEASE_BUILD_RE.match(text)
+        if match:
+            core, number, local = (
+                match.group("core"),
+                match.group("n"),
+                match.group("local"),
+            )
+            text = f"{core}.dev{number}{local or ''}"
+        return text
+
     def _parse_current_version(self, current_version: str) -> version.Version:
         """
         Parse the current version string, handling special cases.
@@ -792,7 +824,7 @@ class UpdateManager(QObject):
                     # If user declines, return a dummy version that's higher than any valid version
                     return version.parse("999.999.999")
 
-            return version.parse(current_version)
+            return version.parse(self.normalize_version_string(current_version))
         except Exception as e:
             logger.warning(f"Failed to parse version '{current_version}': {e}")
             return version.parse("0.0.0")

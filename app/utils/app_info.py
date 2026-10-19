@@ -10,6 +10,31 @@ from app.utils.constants import DEFAULT_USER_RULES
 from app.utils.json_utils import atomic_json_dump
 
 
+def app_version_from_file(version_file: Path) -> str:
+    """Read the build version CI stamps into ``version.xml``.
+
+    Edge builds get the short commit hash appended as a local version
+    (``v1.2.3-edge5+abc1234``) so two Edge builds of the same version can be
+    told apart.
+
+    :param version_file: Path to ``version.xml``.
+    :return: The version string, or ``"Unknown version"`` when the file is
+        missing (e.g. running from source).
+    """
+    if not version_file.exists():
+        return "Unknown version"
+    root = objectify.parse(str(version_file), parser=etree.XMLParser(recover=True))
+    ver = root.find("version")
+    app_version = (
+        ver.text if ver is not None and ver.text is not None else "Unknown version"
+    )
+    if "edge" in app_version.lower():
+        commit = root.find("commit")
+        if commit is not None and commit.text is not None:
+            app_version += f"+{commit.text[:7]}"
+    return app_version
+
+
 class AppInfo:
     """
     Singleton class that provides information about the application and its related directories.
@@ -87,19 +112,9 @@ class AppInfo:
         self._app_name = "RimSort"
         self._app_copyright = ""
 
-        self._app_version = "Unknown version"
-        version_file = str(self._application_folder / "version.xml")
-        if os.path.exists(version_file):
-            root = objectify.parse(version_file, parser=etree.XMLParser(recover=True))
-            ver = root.find("version")
-            if ver is not None and ver.text is not None:
-                self._app_version = ver.text
-
-            # If edge in version_string, append short sha
-            if "edge" in self._app_version.lower():
-                commit = root.find("commit")
-                if commit is not None and commit.text is not None:
-                    self._app_version += f"+{commit[:7]}"
+        self._app_version = app_version_from_file(
+            self._application_folder / "version.xml"
+        )
 
         # Define important directories — dev mode redirects to a local folder
         # so that running from source never touches production data.
