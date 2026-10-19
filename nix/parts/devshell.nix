@@ -5,7 +5,7 @@
   perSystem =
     { config, pkgs, ... }:
     let
-      inherit (config.rimsortPython) devEnv;
+      inherit (config.rimsortPython) devEnv qtLdLibraryPathFor qtPluginPathFor;
       hooks = config.pre-commit.settings;
     in
     {
@@ -25,6 +25,10 @@
           UV_PROJECT_ENVIRONMENT = "${devEnv}";
           # just recipes skip `uv sync` (the env is read-only)
           RIMSORT_NIX_SHELL = "1";
+        }
+        // pkgs.lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
+          # the PySide6 wheel's Qt dlopens system libs at runtime
+          LD_LIBRARY_PATH = qtLdLibraryPathFor devEnv;
         };
 
         shellHook = ''
@@ -37,8 +41,7 @@
           fi
           export PATH=${hooks.package}/bin:$PATH
           unset PYTHONPATH
-          # host Qt plugins (e.g. Plasma's) are built against another Qt
-          unset QT_PLUGIN_PATH QML2_IMPORT_PATH
+          export QT_QPA_PLATFORM_PLUGIN_PATH=${qtPluginPathFor devEnv}
           echo "RimSort dev shell (Nix). Python tools come from uv.lock via uv2nix." 1>&2
           echo "Run the app: python -m app --dev   (or: just run)" 1>&2
           echo "Tests:       just test" 1>&2
