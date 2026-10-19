@@ -241,7 +241,7 @@ launch_app() {
 		# Check if running as root - GUI apps cannot run as root
 		if [ "$EUID" -eq 0 ]; then
 			log_warning "Cannot launch GUI application as root. Please launch RimSort manually as a regular user."
-			read -r -p "Press any key to continue..."
+			read -r -p "Press any key to continue..." || true
 			return
 		fi
 		cd "$(dirname "$app_path")"
@@ -363,7 +363,7 @@ if [ -n "${APPIMAGE:-}" ]; then
 	log_info "Launching updated AppImage..."
 	if [ "$(id -u)" -eq 0 ]; then
 		log_warning "Cannot launch GUI application as root. Please launch RimSort manually as a regular user."
-		read -r -p "Press any key to continue..."
+		read -r -p "Press any key to continue..." || true
 	elif ! $DRY_RUN; then
 		nohup "$APPIMAGE" >/dev/null 2>&1 &
 		sleep 2
