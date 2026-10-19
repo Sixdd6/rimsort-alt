@@ -62,8 +62,11 @@ def check_for_updates(
                 check_interval_hours=check_interval_hours,
             )
         except GitHubRateLimitError:
-            logger.warning(f"Rate limit hit while checking {mod.owner_repo}, skipping")
-            continue
+            # Every further request would be refused as well
+            logger.warning(
+                f"Rate limit hit while checking {mod.owner_repo}, stopping the check"
+            )
+            break
         except Exception as e:
             logger.error(f"Error checking updates for {mod.owner_repo}: {e}")
             continue

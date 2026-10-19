@@ -1,6 +1,7 @@
 import json
 from collections.abc import Generator
 from datetime import UTC, datetime, timedelta
+from unittest.mock import MagicMock
 
 import pytest
 from sqlalchemy import create_engine
@@ -8,7 +9,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.models.metadata.metadata_db import AuxMetadataEntry, Base
 from app.utils.github.models import CacheBase, GitHubModEntry, GitHubReleaseCache
-from app.utils.github.provider import GitHubProvider
+from app.utils.github.provider import GitHubProvider, GitHubRateLimitError
 from app.utils.github.updater import UpdateAvailable, check_for_updates
 
 
@@ -118,3 +119,29 @@ class TestCheckForUpdates:
         assert len(updates) == 1
         assert updates[0].installed_version == "HEAD"
         assert updates[0].latest_version == "v1.0.0"
+
+
+def test_rate_limit_stops_the_check_instead_of_hitting_every_mod(
+    db_session: Session,
+) -> None:
+    for name in ("A", "B"):
+        aux = AuxMetadataEntry(path=f"/mods/{name}")
+        db_session.add(aux)
+        db_session.flush()
+        db_session.add(
+            GitHubModEntry(
+                owner_repo=f"author/{name}",
+                mod_path=f"/mods/{name}",
+                installed_version="v1.0.0",
+            )
+        )
+    db_session.commit()
+    provider = MagicMock()
+    provider.get_releases.side_effect = GitHubRateLimitError("limit")
+
+    updates = check_for_updates(
+        instance_session=db_session, provider=provider, check_interval_hours=24
+    )
+
+    assert updates == []
+    assert provider.get_releases.call_count == 1

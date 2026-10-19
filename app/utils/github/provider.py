@@ -5,12 +5,13 @@ Wraps PyGitHub to fetch release data from GitHub repositories,
 caching results in SQLAlchemy-backed SQLite to respect rate limits.
 """
 
+import itertools
 import json
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from urllib.parse import urlparse
 
-from github import Github, GithubException
+from github import Github, GithubException, RateLimitExceededException
 from loguru import logger
 from sqlalchemy.orm import Session
 
@@ -51,6 +52,25 @@ class ReleaseInfo:
             if a.name.lower().endswith(".zip")
             and not a.name.lower().startswith(source_prefixes)
         ]
+
+
+# Releases fetched per repository: one page at this size
+MAX_RELEASES = 100
+
+
+def _is_rate_limit(error: GithubException) -> bool:
+    """Whether a GitHub API failure was a rate limit rather than another 403.
+
+    GitHub also answers 403 for private repositories and tokens without the
+    needed scope; those must not be reported as a rate limit.
+    """
+    if isinstance(error, RateLimitExceededException) or error.status == 429:
+        return True
+    if error.status != 403:
+        return False
+    data = error.data if isinstance(error.data, dict) else {}
+    message = str(data.get("message", "")).lower()
+    return "rate limit" in message or "abuse detection" in message
 
 
 class GitHubRateLimitError(Exception):
@@ -163,8 +183,8 @@ class GitHubProvider:
     def _get_github_client(self) -> Github:
         """Create a PyGitHub client, optionally authenticated."""
         if self._token:
-            return Github(self._token)
-        return Github()
+            return Github(self._token, per_page=MAX_RELEASES)
+        return Github(per_page=MAX_RELEASES)
 
     def get_releases(
         self,
@@ -228,14 +248,16 @@ class GitHubProvider:
             gh_releases = repo.get_releases()
 
             releases: list[ReleaseInfo] = []
-            for rel in gh_releases:
+            # The list response already carries each release's assets;
+            # get_assets() would cost one more request per release
+            for rel in itertools.islice(gh_releases, MAX_RELEASES):
                 assets = [
                     ReleaseAsset(
                         name=a.name,
                         download_url=a.browser_download_url,
                         size=a.size,
                     )
-                    for a in rel.get_assets()
+                    for a in rel.assets
                 ]
                 published = rel.published_at
                 if published and published.tzinfo is None:
@@ -255,14 +277,16 @@ class GitHubProvider:
             return releases
 
         except GithubException as e:
-            if e.status in (403, 429):
+            if _is_rate_limit(e):
                 logger.warning(f"GitHub rate limit hit for {owner_repo}")
                 raise GitHubRateLimitError(
                     "GitHub API rate limit reached. Configure a GitHub token "
                     "in Settings for higher limits (5,000 requests/hour vs 60)."
                 ) from e
-            if e.status == 404:
-                logger.warning(f"Repository {owner_repo} not found or private")
+            if e.status in (403, 404):
+                logger.warning(
+                    f"Repository {owner_repo} not found or not accessible: {e}"
+                )
                 return []
             raise
 

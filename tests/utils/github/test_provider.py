@@ -210,7 +210,7 @@ def _make_mock_release(
     rel.prerelease = prerelease
     rel.draft = draft
     rel.body = body
-    rel.get_assets.return_value = assets or []
+    rel.assets = assets or []
     return rel
 
 
@@ -283,6 +283,32 @@ class TestFetchReleasesFromApi:
         provider = GitHubProvider()
         with pytest.raises(GitHubRateLimitError):
             provider.get_releases("author/Mod", force_refresh=True)
+
+    @patch("app.utils.github.provider.Github")
+    def test_other_403_is_not_a_rate_limit(self, mock_github_cls: MagicMock) -> None:
+        mock_github_cls.return_value.get_repo.side_effect = GithubException(
+            403, {"message": "Resource not accessible by integration"}, None
+        )
+
+        provider = GitHubProvider()
+        assert provider.get_releases("author/Mod", force_refresh=True) == []
+
+    @patch("app.utils.github.provider.Github")
+    def test_assets_come_from_the_release_record(
+        self, mock_github_cls: MagicMock
+    ) -> None:
+        mock_release = _make_mock_release(
+            tag="v1.0.0", assets=[_make_mock_asset("Mod.zip", "https://x/Mod.zip")]
+        )
+        mock_repo = MagicMock()
+        mock_repo.get_releases.return_value = [mock_release]
+        mock_github_cls.return_value.get_repo.return_value = mock_repo
+
+        releases = GitHubProvider().get_releases("author/Mod", force_refresh=True)
+
+        assert [a.name for a in releases[0].assets] == ["Mod.zip"]
+        mock_release.get_assets.assert_not_called()
+        assert mock_github_cls.call_args.kwargs["per_page"] == 100
 
     @patch("app.utils.github.provider.Github")
     def test_404_returns_empty_list(self, mock_github_cls: MagicMock) -> None:
