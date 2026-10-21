@@ -105,12 +105,11 @@ def test_mediator_use_this_instead_defaults_none(tmp_path: Path) -> None:
     assert mediator.use_this_instead is None
 
 
-def test_mediator_loads_no_version_warning(tmp_path: Path) -> None:
-    """Mediator loads No Version Warning from XML file."""
-    xml_content = '<?xml version="1.0" encoding="utf-8"?>\n<ModIdsToFix><li>mod.a</li><li>mod.b</li></ModIdsToFix>'
+def _load_no_version_warning(tmp_path: Path, body: str) -> list[str] | None:
     nvw_path = tmp_path / "ModIdsToFix.xml"
-    nvw_path.write_text(xml_content)
-
+    nvw_path.write_text(
+        '\ufeff<?xml version="1.0" encoding="utf-8"?>\n' + body, encoding="utf-8"
+    )
     mediator = MetadataMediator(
         user_rules_path=tmp_path / "rules.json",
         community_rules_path=None,
@@ -121,9 +120,34 @@ def test_mediator_loads_no_version_warning(tmp_path: Path) -> None:
         no_version_warning_path=nvw_path,
     )
     mediator._load_no_version_warning()
-    assert mediator.no_version_warning is not None
-    assert "mod.a" in mediator.no_version_warning
-    assert "mod.b" in mediator.no_version_warning
+    return mediator.no_version_warning
+
+
+def test_mediator_loads_no_version_warning(tmp_path: Path) -> None:
+    """Mediator loads No Version Warning from XML file."""
+    entries = _load_no_version_warning(
+        tmp_path, "<ModIdsToFix><li>mod.a</li><li>Mod.B</li></ModIdsToFix>"
+    )
+    assert entries == ["mod.a", "mod.b"]
+
+
+def test_mediator_loads_a_single_no_version_warning_entry(tmp_path: Path) -> None:
+    entries = _load_no_version_warning(
+        tmp_path, "<ModIdsToFix><li>mod.a</li></ModIdsToFix>"
+    )
+    assert entries == ["mod.a"]
+
+
+@pytest.mark.parametrize(
+    "body",
+    ["<ModIdsToFix>\n</ModIdsToFix>", "<ModIdsToFix/>", "<ModIdsToFix></ModIdsToFix>"],
+)
+def test_mediator_accepts_an_empty_no_version_warning_db(
+    tmp_path: Path, body: str
+) -> None:
+    """The DB for a new game version (e.g. 1.7) can have no entries yet; loading
+    it used to raise AttributeError and crash every refresh."""
+    assert _load_no_version_warning(tmp_path, body) == []
 
 
 def test_mediator_loads_use_this_instead(tmp_path: Path) -> None:
