@@ -15,16 +15,16 @@
     let
       # Keep in lockstep with the jscpd version the justfile pins for
       # non-Nix developers (`just jscpd` -> npx --yes jscpd@<version>).
-      version = "5.3.0";
+      version = "5.4.2";
 
       jscpdPkgs = {
         x86_64-linux = {
           name = "jscpd-linux-x64-gnu";
-          hash = "sha256-hutkqIus0cMUl9nXQg6vb2DBMCqpSlqce5SNr3S5TaM=";
+          hash = "sha256-gWw/L5lR6RWQmynmGF8z/vOkN0gyc8RMza+ES8lpW9U=";
         };
         aarch64-linux = {
           name = "jscpd-linux-arm64-gnu";
-          hash = "sha256-MXBYWqQpd7B6FGy8T1fpqzZsSTrv8bfr8jtiFAkk5XQ=";
+          hash = "sha256-bpyNg8mEyS5ZzKC2V5ERvgG8UAPKkJ2ToWw5TWshhBs=";
         };
       };
 

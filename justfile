@@ -80,11 +80,11 @@ ruff-format-fix:
 
 # Check Markdown documentation for issues (markdownlint-cli2)
 markdownlint:
-    npx --yes markdownlint-cli2@0.23.2
+    npx --yes markdownlint-cli2@0.24.0
 
 # Fix Markdown documentation issues (markdownlint-cli2 --fix)
 markdownlint-fix:
-    npx --yes markdownlint-cli2@0.23.2 --fix
+    npx --yes markdownlint-cli2@0.24.0 --fix
 
 # Check shell script formatting (shfmt, fails on any differences)
 [unix]
@@ -114,7 +114,7 @@ shfmt-fix:
 
 # Run copy/paste detection (jscpd) using the project's .jscpd.json config
 jscpd:
-    npx --yes jscpd@5.3.0 . --config .jscpd.json
+    npx --yes jscpd@5.4.2 . --config .jscpd.json
 
 # Run all code quality checks: nix flake check + typecheck + pyright + repo guards
 [unix]
