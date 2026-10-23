@@ -959,16 +959,8 @@ class MainContent(QObject):
         Refresh expensive calculations & repopulate lists with that refreshed data
         """
         EventBus().refresh_started.emit()
-        EventBus().do_save_button_animation_stop.emit()
         # Force a re-read of the startup impact report on the next recalculation
         invalidate_startup_impact_cache()
-        # If we are refreshing cache from user action
-        if not is_initial:
-            # Reset the data source filters to default and clear searches
-            # Avoid recalculating warnings/errors when clearing search
-            # Recalculation for each list will be triggered by mods being reinserted into inactive and active lists automatically
-            self.mods_panel.reset_all_filters_and_search("Active")
-            self.mods_panel.reset_all_filters_and_search("Inactive")
         # Check if paths are set
         if self.check_if_essential_paths_are_set(prompt=is_initial):
             # Run expensive calculations to set cache data
@@ -1025,6 +1017,7 @@ class MainContent(QObject):
                 loop.exec_()
                 logger.debug("Settings dialog closed. Continuing with refresh...")
 
+        EventBus().do_update_save_button_state.emit()
         EventBus().refresh_finished.emit()
 
     def _do_clear(self) -> None:
@@ -1952,7 +1945,7 @@ class MainContent(QObject):
             )
             return False
         finally:
-            EventBus().do_save_button_animation_stop.emit()
+            EventBus().do_update_save_button_state.emit()
 
     def _do_restore(self) -> None:
         """

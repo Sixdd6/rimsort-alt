@@ -1,6 +1,4 @@
-from loguru import logger
 from PySide6.QtCore import QObject, Slot
-from PySide6.QtWidgets import QPushButton
 
 from app.controllers.metadata_controller import MetadataController
 from app.models.divider import is_divider_uuid
@@ -44,23 +42,10 @@ class MainWindowController(QObject):
             button.clicked.connect(signal.emit)
 
         # Connect EventBus signals to slots
-        EventBus().do_button_animation.connect(self.on_button_animation)
-        EventBus().do_save_button_animation_stop.connect(
-            self.on_save_button_animation_stop
-        )
-        EventBus().list_updated_signal.connect(
-            self.on_save_button_animation_start
-        )  # Save btn animation
+        EventBus().do_update_save_button_state.connect(self.on_update_save_button_state)
+        EventBus().list_updated_signal.connect(self.on_update_save_button_state)
         EventBus().refresh_started.connect(self.on_refresh_started)
         EventBus().refresh_finished.connect(self.on_refresh_finished)
-
-    # @Slot() # TODO: fix @slot() related MYPY errors once bug is fixed in https://bugreports.qt.io/browse/PYSIDE-2942
-    def on_button_animation(self, button: QPushButton) -> None:
-        button.setObjectName(
-            "%s" % ("" if button.objectName() == "indicator" else "indicator")
-        )
-        button.style().unpolish(button)
-        button.style().polish(button)
 
     @Slot()
     def on_refresh_started(self) -> None:
@@ -74,35 +59,17 @@ class MainWindowController(QObject):
         )
 
     @Slot()
-    def on_save_button_animation_start(self) -> None:
-        logger.debug(
-            "Active mods list has been updated. Managing save button animation state."
-        )
+    def on_update_save_button_state(self) -> None:
+        """Show whether the active mods list differs from the last save."""
         current_mod_uuids = [
             u
             for u in self.main_window.main_content_panel.mods_panel.active_mods_list.paths
             if not is_divider_uuid(u)
         ]
-        if (
+        self.main_window.save_button.set_unsaved_changes(
             current_mod_uuids
             != self.main_window.main_content_panel.active_mods_uuids_last_save
-        ):
-            if not self.main_window.save_button_flashing_animation.isActive():
-                logger.debug("Starting save button animation")
-                self.main_window.save_button_flashing_animation.start(
-                    500
-                )  # Blink every 500 milliseconds
-        else:
-            self.on_save_button_animation_stop()
-
-    @Slot()
-    def on_save_button_animation_stop(self) -> None:
-        # Stop the save button from blinking if it is blinking
-        if self.main_window.save_button_flashing_animation.isActive():
-            self.main_window.save_button_flashing_animation.stop()
-            self.main_window.save_button.setObjectName("")
-            self.main_window.save_button.style().unpolish(self.main_window.save_button)
-            self.main_window.save_button.style().polish(self.main_window.save_button)
+        )
 
     def set_buttons_enabled(self, enabled: bool) -> None:
         for btn in self.buttons:

@@ -7,7 +7,6 @@ if TYPE_CHECKING:
     from app.views.settings_dialog import SettingsDialog
 
 from loguru import logger
-from PySide6.QtCore import QTimer
 from PySide6.QtGui import QCloseEvent, QShowEvent
 from PySide6.QtWidgets import (
     QApplication,
@@ -44,6 +43,7 @@ from app.views.file_search_dialog import FileSearchDialog
 from app.views.main_content_panel import MainContent
 from app.views.menu_bar import MenuBar
 from app.views.player_log_tab import PlayerLogTab
+from app.views.save_button import SaveButton
 from app.views.status_panel import Status
 from app.views.troubleshooting_dialog import TroubleshootingDialog
 from app.views.update_log import UpdateLog
@@ -140,7 +140,7 @@ class MainWindow(QMainWindow):
         self.clear_button = QPushButton(self.tr("Clear"))
         self.restore_button = QPushButton(self.tr("Restore"))
         self.sort_button = QPushButton(self.tr("Sort"))
-        self.save_button = QPushButton(self.tr("Save"))
+        self.save_button = SaveButton(self.tr("Save"))
         self.run_button = QPushButton(self.tr("Run"))
 
         buttons = [
@@ -204,12 +204,6 @@ class MainWindow(QMainWindow):
         )
         self.troubleshooting_layout.addWidget(self.troubleshooting_dialog)
         self.tab_widget.addTab(self.troubleshooting_tab, self.tr("Troubleshooting"))
-
-        # Save button flashing animation
-        self.save_button_flashing_animation = QTimer()
-        self.save_button_flashing_animation.timeout.connect(
-            partial(EventBus().do_button_animation.emit, self.save_button)
-        )
 
         # Create the bottom panel
         app_layout.addWidget(self.bottom_panel.frame)

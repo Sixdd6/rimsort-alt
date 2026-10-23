@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from PySide6.QtCore import QObject, Signal
-from PySide6.QtWidgets import QPushButton, QWidget
+from PySide6.QtWidgets import QWidget
 
 
 class EventBus(QObject):
@@ -103,9 +103,7 @@ class EventBus(QObject):
     do_change_mod_coloring_mode = Signal()
 
     # MainWindow signals
-    do_button_animation = Signal(QPushButton)
-    do_save_button_animation_start = Signal()
-    do_save_button_animation_stop = Signal()
+    do_update_save_button_state = Signal()
     do_refresh_mods_lists = Signal()
     do_clear_active_mods_list = Signal()
     do_restore_active_mods_list = Signal()

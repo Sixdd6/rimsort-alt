@@ -215,3 +215,37 @@ def test_use_this_instead_button_ignores_replaced_inactive_originals(
     panel.active_mods_list.addItem(item)
     panel.update_use_this_instead_button()
     assert panel.use_this_instead_button.text() == "Replacements available (2)"
+
+
+def test_tag_refresh_reapplies_the_kept_search(
+    qtbot: object, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    settings = Settings()
+    matching_path = "/mods/matching"
+    other_path = "/mods/other"
+    metadata = MagicMock()
+    metadata.mods_metadata = {
+        matching_path: AboutXmlMod(
+            name="Matching Mod", package_id=CaseInsensitiveStr("example.matching")
+        ),
+        other_path: AboutXmlMod(
+            name="Other Mod", package_id=CaseInsensitiveStr("example.other")
+        ),
+    }
+    metadata.get_mod.side_effect = metadata.mods_metadata.get
+    monkeypatch.setattr("app.views.mods_panel.auxdb_get_all_tags", lambda _settings: [])
+
+    panel = ModsPanel(settings, metadata)
+    qtbot.addWidget(panel)  # type: ignore[attr-defined]
+    panel.inactive_mods_search.setText("matching")
+    # Lists rebuilt by a refresh come back unfiltered
+    matching_item = _add_mod_item(panel, "Inactive", matching_path)
+    other_item = _add_mod_item(panel, "Inactive", other_path)
+    panel.inactive_mods_list.paths = [matching_path, other_path]
+    panel.inactive_mods_list.check_widgets_visible = MagicMock()  # type: ignore[method-assign]
+
+    panel.refresh_all_tag_filter_selectors()
+
+    assert panel.inactive_mods_search.text() == "matching"
+    assert not matching_item.isHidden()
+    assert other_item.isHidden()

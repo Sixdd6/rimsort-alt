@@ -82,7 +82,7 @@ def test_cancel_preserves_original_list_and_state(
         dialogue, "confirm_content_discovery_override", confirm, raising=False
     )
     stopped: list[bool] = []
-    EventBus().do_save_button_animation_stop.connect(lambda: stopped.append(True))
+    EventBus().do_update_save_button_state.connect(lambda: stopped.append(True))
     assert MainContent._do_save(mc) is False
     assert confirm.call_args.kwargs["action_text"] == "Save anyway"
     assert config.read_bytes() == original

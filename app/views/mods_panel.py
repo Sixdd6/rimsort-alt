@@ -5153,8 +5153,7 @@ class ModsPanel(QWidget):
                 else self.tr("0 updated")
             )
 
-            # First time and refresh: the slot will evaluate false and do nothing.
-            # Purpose: triggers the _do_save_animation slot in main_content_panel
+            # Lets the save button show whether the list has unsaved changes
             EventBus().list_updated_signal.emit()
         else:
             # For Inactive list: only update internal state, no display updates

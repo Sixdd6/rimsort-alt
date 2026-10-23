@@ -4614,6 +4614,17 @@ An alternative updated mod is recommended:
     </message>
 </context>
 <context>
+    <name>SaveButton</name>
+    <message>
+        <source>The active mods list has unsaved changes</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>The active mods list is saved</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>SearchWorker</name>
     <message>
         <source>Searching in: {root_path}</source>

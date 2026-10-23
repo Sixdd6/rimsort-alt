@@ -419,3 +419,14 @@ def test_append_mod_list_cancel(
 
     # Calling this should log cancellation and return early
     mc._do_append_list_file_xml()
+
+
+def test_refresh_keeps_search_and_filters(monkeypatch: pytest.MonkeyPatch) -> None:
+    mc = Mock()
+    mc.check_if_essential_paths_are_set.return_value = False
+    mc._settings_dialog = None
+    monkeypatch.setattr(main_content_panel, "invalidate_startup_impact_cache", Mock())
+
+    MainContent._do_refresh(mc)
+
+    mc.mods_panel.reset_all_filters_and_search.assert_not_called()
