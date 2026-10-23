@@ -14,6 +14,11 @@ from PySide6.QtWidgets import (
 
 from app.controllers.metadata_controller import MetadataController
 from app.services.dependency_resolver import DepResolveResult
+from app.services.ignored_dependencies import (
+    IgnoredDependencies,
+    ignore_key,
+    set_dependency_ignored,
+)
 from app.utils.event_bus import EventBus
 from app.utils.steam.workshop_urls import build_workshop_text_search_url
 
@@ -21,7 +26,8 @@ _DEPS_SUMMARY_ARGS_DOC = (
     "deps_summary: dict mapping each mod package ID to a dict with keys:\n"
     '    - "satisfied": set of dep package IDs already active\n'
     '    - "local": set of dep package IDs available locally but not active\n'
-    '    - "download": set of dep package IDs that need to be downloaded'
+    '    - "download": set of dep package IDs that need to be downloaded\n'
+    '    - "ignored": set of missing dep package IDs the user ignored (optional)'
 )
 
 
@@ -45,7 +51,10 @@ class MissingDependenciesDialog(QDialog):
         self.setObjectName("missingDependenciesDialog")
         self.metadata_controller = metadata_controller
         self.selected_mods: set[str] = set()
-        self.checkboxes: dict[str, QCheckBox] = {}
+        # A dependency needed by several mods gets one checkbox per mod
+        self.checkboxes: dict[str, list[QCheckBox]] = {}
+        self._ignored: set[tuple[str, str]] = set()
+        self.ignores_changed = False
         self._dep_resolve: dict[str, DepResolveResult] = {}
         self._deps_summary: dict[str, dict[str, set[str]]] = {}
         self._setup_ui()
@@ -79,6 +88,17 @@ class MissingDependenciesDialog(QDialog):
         )
         self.show_satisfied_checkbox.toggled.connect(self._on_show_satisfied_toggled)
         main_layout.addWidget(self.show_satisfied_checkbox)
+
+        self.show_ignored_checkbox = QCheckBox()
+        self.show_ignored_checkbox.setObjectName("showIgnoredDepsCheckbox")
+        self.show_ignored_checkbox.setChecked(False)
+        self.show_ignored_checkbox.setToolTip(
+            self.tr(
+                "Show dependencies you chose to ignore, so you can stop ignoring them"
+            )
+        )
+        self.show_ignored_checkbox.toggled.connect(self._on_show_satisfied_toggled)
+        main_layout.addWidget(self.show_ignored_checkbox)
 
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
@@ -120,6 +140,7 @@ class MissingDependenciesDialog(QDialog):
         deps_summary: dict[str, dict[str, set[str]]],
         missing_deps: dict[str, set[str]],
         dep_resolve: dict[str, DepResolveResult] | None = None,
+        ignored: IgnoredDependencies = frozenset(),
     ) -> set[str]:
         """
         Show the dialog with all dependencies (satisfied + missing) for each mod.
@@ -130,12 +151,15 @@ class MissingDependenciesDialog(QDialog):
                           dependency package IDs (same as before, used to
                           determine if there are any missing deps at all)
             dep_resolve: optional map of download dep package IDs to workshop resolve results
+            ignored: (mod, dependency) pairs the user ignored, keyed by ``ignore_key``
 
         Returns:
             Set of selected mod package IDs if user accepted, empty set otherwise.
         """
         self._dep_resolve = dep_resolve or {}
         self._deps_summary = deps_summary
+        self._ignored = set(ignored)
+        self.ignores_changed = False
         self.selected_mods.clear()
         self._populate_dependencies(deps_summary)
 
@@ -174,6 +198,12 @@ class MissingDependenciesDialog(QDialog):
         total_download = 0
         total_missing_per_mod = 0  # number of mods that have at least one missing dep
         mods_with_deps = 0
+        total_ignored = sum(
+            len(deps.get("ignored", set())) for deps in deps_summary.values()
+        )
+        self.show_ignored_checkbox.setText(
+            self.tr("Show ignored dependencies ({count})").format(count=total_ignored)
+        )
 
         for mod_id, deps in deps_summary.items():
             satisfied = deps.get("satisfied", set())
@@ -228,13 +258,15 @@ class MissingDependenciesDialog(QDialog):
 
         # Sort mods alphabetically for consistent display
         show_satisfied = self.show_satisfied_checkbox.isChecked()
+        show_ignored = self.show_ignored_checkbox.isChecked()
         for mod_id in sorted(deps_summary.keys()):
             deps = deps_summary[mod_id]
             satisfied = deps.get("satisfied", set())
             local = deps.get("local", set())
             download = deps.get("download", set())
+            ignored = deps.get("ignored", set()) if show_ignored else set()
 
-            if not show_satisfied and not local and not download:
+            if not show_satisfied and not local and not download and not ignored:
                 # Fully satisfied mod — nothing actionable, skip it
                 continue
 
@@ -270,21 +302,15 @@ class MissingDependenciesDialog(QDialog):
                 self.scroll_layout.addWidget(satisfied_label)
 
             # --- Local deps (checkable) ---
-            if local:
-                for dep_id in sorted(local):
-                    dep_name = self.metadata_controller.get_mod_name_from_package_id(
-                        dep_id
-                    )
-                    checkbox = QCheckBox(f"  📦 {dep_name}  ({dep_id})")
-                    checkbox.setToolTip(
-                        self.tr("Available locally - add to active list")
-                    )
-                    checkbox.setChecked(dep_id in self.selected_mods)
-                    checkbox.stateChanged.connect(
-                        partial(self._toggle_mod_selection, mod_id=dep_id)
-                    )
-                    self.scroll_layout.addWidget(checkbox)
-                    self.checkboxes[dep_id] = checkbox
+            for dep_id in sorted(local):
+                dep_name = self.metadata_controller.get_mod_name_from_package_id(dep_id)
+                row, _row_layout = self._dependency_row(
+                    mod_id,
+                    dep_id,
+                    f"  📦 {dep_name}  ({dep_id})",
+                    self.tr("Available locally - add to active list"),
+                )
+                self.scroll_layout.addWidget(row)
 
             # --- Download deps (checkable) ---
             if download:
@@ -292,19 +318,14 @@ class MissingDependenciesDialog(QDialog):
                     dep_name = self.metadata_controller.get_mod_name_from_package_id(
                         dep_id
                     )
-                    row = QWidget()
-                    row_layout = QHBoxLayout(row)
-                    row_layout.setContentsMargins(0, 0, 0, 0)
-                    checkbox = QCheckBox(f"  🌐 {dep_name}  ({dep_id})")
-                    checkbox.setToolTip(
-                        self.tr("Needs to be downloaded - requires SteamCMD")
+                    row, row_layout = self._dependency_row(
+                        mod_id,
+                        dep_id,
+                        f"  🌐 {dep_name}  ({dep_id})",
+                        self.tr("Needs to be downloaded - requires SteamCMD"),
                     )
-                    checkbox.setChecked(dep_id in self.selected_mods)
-                    checkbox.stateChanged.connect(
-                        partial(self._toggle_mod_selection, mod_id=dep_id)
-                    )
-                    row_layout.addWidget(checkbox, stretch=1)
-                    self.checkboxes[dep_id] = checkbox
+                    # Keep the ignore checkbox last
+                    ignore_checkbox = row_layout.takeAt(row_layout.count() - 1)
 
                     resolve = self._dep_resolve.get(dep_id)
                     open_btn = QPushButton(self.tr("Open Workshop"))
@@ -326,6 +347,8 @@ class MissingDependenciesDialog(QDialog):
 
                         download_btn.clicked.connect(_emit_download)
                     row_layout.addWidget(download_btn)
+                    if ignore_checkbox is not None:
+                        row_layout.addItem(ignore_checkbox)
                     self.scroll_layout.addWidget(row)
 
                     if not has_workshop_id:
@@ -337,6 +360,18 @@ class MissingDependenciesDialog(QDialog):
                         hint.setObjectName("missingWorkshopHint")
                         hint.setWordWrap(True)
                         self.scroll_layout.addWidget(hint)
+
+            # --- Ignored deps (only the ignore checkbox) ---
+            for dep_id in sorted(ignored):
+                dep_name = self.metadata_controller.get_mod_name_from_package_id(dep_id)
+                row = QWidget()
+                row_layout = QHBoxLayout(row)
+                row_layout.setContentsMargins(0, 0, 0, 0)
+                label = QLabel(f"  🚫 {dep_name}  ({dep_id})")
+                label.setObjectName("ignoredDepLabel")
+                row_layout.addWidget(label, stretch=1)
+                row_layout.addWidget(self._ignore_checkbox(mod_id, dep_id, None))
+                self.scroll_layout.addWidget(row)
 
             # Add a separator between mods
             self.scroll_layout.addSpacing(10)
@@ -354,6 +389,93 @@ class MissingDependenciesDialog(QDialog):
             self._set_action_buttons_visible(False)
 
         self.scroll_layout.addStretch()
+
+    def _dependency_row(
+        self, mod_id: str, dep_id: str, text: str, tooltip: str
+    ) -> tuple[QWidget, QHBoxLayout]:
+        """
+        Build a row with the add checkbox and the ignore checkbox for a dependency.
+
+        :param mod_id: Package ID of the mod declaring the dependency.
+        :param dep_id: Package ID of the missing dependency.
+        :param text: Add checkbox text.
+        :param tooltip: Add checkbox tooltip.
+        :return: The row widget and its layout.
+        """
+        row = QWidget()
+        row_layout = QHBoxLayout(row)
+        row_layout.setContentsMargins(0, 0, 0, 0)
+        checkbox = QCheckBox(text)
+        checkbox.setToolTip(tooltip)
+        is_ignored = ignore_key(mod_id, dep_id) in self._ignored
+        checkbox.setEnabled(not is_ignored)
+        checkbox.setChecked(not is_ignored and dep_id in self.selected_mods)
+        checkbox.toggled.connect(partial(self._toggle_mod_selection, mod_id=dep_id))
+        row_layout.addWidget(checkbox, stretch=1)
+        self.checkboxes.setdefault(dep_id, []).append(checkbox)
+        row_layout.addWidget(self._ignore_checkbox(mod_id, dep_id, checkbox))
+        return row, row_layout
+
+    def _ignore_checkbox(
+        self, mod_id: str, dep_id: str, add_checkbox: QCheckBox | None
+    ) -> QCheckBox:
+        """
+        Build the checkbox that ignores one dependency of one mod.
+
+        :param mod_id: Package ID of the mod declaring the dependency.
+        :param dep_id: Package ID of the dependency.
+        :param add_checkbox: The row's add checkbox, if it has one.
+        :return: The ignore checkbox.
+        """
+        checkbox = QCheckBox(self.tr("Ignore"))
+        checkbox.setObjectName("ignoreDependencyCheckbox")
+        checkbox.setToolTip(
+            self.tr("Stop reporting this dependency as missing for this mod")
+        )
+        checkbox.setChecked(ignore_key(mod_id, dep_id) in self._ignored)
+        checkbox.toggled.connect(
+            partial(
+                self._toggle_ignored,
+                mod_id=mod_id,
+                dep_id=dep_id,
+                add_checkbox=add_checkbox,
+            )
+        )
+        return checkbox
+
+    def _toggle_ignored(
+        self,
+        checked: bool,
+        mod_id: str,
+        dep_id: str,
+        add_checkbox: QCheckBox | None,
+    ) -> None:
+        """
+        Save an ignore change and update the row's add checkbox.
+
+        :param checked: True to ignore the dependency.
+        :param mod_id: Package ID of the mod declaring the dependency.
+        :param dep_id: Package ID of the dependency.
+        :param add_checkbox: The row's add checkbox, if it has one.
+        """
+        set_dependency_ignored(
+            self.metadata_controller.settings.aux_db_path, mod_id, dep_id, checked
+        )
+        key = ignore_key(mod_id, dep_id)
+        if checked:
+            self._ignored.add(key)
+        else:
+            self._ignored.discard(key)
+        self.ignores_changed = True
+        if add_checkbox is None:
+            return
+        add_checkbox.blockSignals(True)
+        add_checkbox.setEnabled(not checked)
+        add_checkbox.setChecked(not checked and dep_id in self.selected_mods)
+        add_checkbox.blockSignals(False)
+        # Still needed by another mod that doesn't ignore it: keep the selection
+        if not any(box.isEnabled() for box in self.checkboxes.get(dep_id, [])):
+            self.selected_mods.discard(dep_id)
 
     def _set_action_buttons_visible(self, visible: bool) -> None:
         """Show or hide the action buttons in the button layout."""
@@ -375,7 +497,7 @@ class MissingDependenciesDialog(QDialog):
                     w.setVisible(visible)
 
     def _on_show_satisfied_toggled(self, _checked: bool) -> None:
-        """Re-render the dependency list when the satisfied-visibility toggle changes.
+        """Re-render the dependency list when a visibility toggle changes.
 
         Selections are preserved: ``clear_dependencies`` keeps
         ``selected_mods`` and re-created checkboxes restore their state.
@@ -405,21 +527,26 @@ class MissingDependenciesDialog(QDialog):
         """
         Select all dependency checkboxes.
         """
-        for checkbox in self.checkboxes.values():
-            checkbox.setChecked(True)
+        for checkboxes in self.checkboxes.values():
+            for checkbox in checkboxes:
+                if checkbox.isEnabled():
+                    checkbox.setChecked(True)
 
-    def _toggle_mod_selection(self, state: int, mod_id: str) -> None:
+    def _toggle_mod_selection(self, checked: bool, mod_id: str) -> None:
         """
-        Toggle a mod's selection state.
+        Toggle a mod's selection state and tick its other copies to match.
 
         Args:
-            state: The state of the checkbox.
+            checked: Whether the checkbox is now ticked.
             mod_id: The package ID of the mod.
         """
-        if state == Qt.CheckState.Checked.value:
+        if checked:
             self.selected_mods.add(mod_id)
         else:
             self.selected_mods.discard(mod_id)
+        for checkbox in self.checkboxes.get(mod_id, []):
+            if checkbox.isEnabled() and checkbox.isChecked() != checked:
+                checkbox.setChecked(checked)
 
     def get_selected_mods(self) -> set[str]:
         """

@@ -2788,6 +2788,10 @@ Aktif modlar listenize hangi eksik bağımlılıkların ekleneceğini seçin.</t
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>Show dependencies you chose to ignore, so you can stop ignoring them</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Select All</source>
         <translation>Tümünü Seç</translation>
     </message>
@@ -2802,6 +2806,10 @@ Aktif modlar listenize hangi eksik bağımlılıkların ekleneceğini seçin.</t
     <message>
         <source>No dependencies found for any active mod.</source>
         <translation>Herhangi bir aktif mod için bağımlılık bulunamadı.</translation>
+    </message>
+    <message>
+        <source>Show ignored dependencies ({count})</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>&lt;b&gt;Summary:&lt;/b&gt; {total_deps} total dependencies across {mods_with_deps} mods — ✅ {total_satisfied} fulfilled, ⚠️ {total_missing} missing ({total_local} local, {total_download} download) across {total_missing_per_mod} mod(s)</source>
@@ -2839,6 +2847,14 @@ Aktif modlar listenize hangi eksik bağımlılıkların ekleneceğini seçin.</t
         <source>
 All dependencies are satisfied. No missing dependencies found.</source>
         <translation>Tüm bağımlılıklar karşılanır. Eksik bağımlılık bulunamadı.</translation>
+    </message>
+    <message>
+        <source>Ignore</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Stop reporting this dependency as missing for this mod</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Dependency Manager</source>

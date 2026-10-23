@@ -47,6 +47,10 @@ from app.services.game_layout_service import (
     get_game_content_candidates,
     resolve_game_layout,
 )
+from app.services.ignored_dependencies import (
+    load_ignored_dependencies,
+    prune_ignored_dependencies,
+)
 from app.services.import_export_service import ImportExportService
 from app.services.mod_list_parser import ModListFormatError, parse_mod_list_file
 from app.services.modlist_history_service import ModlistHistoryService
@@ -980,6 +984,13 @@ class MainContent(QObject):
             if result is None and self.metadata_controller.is_abort_requested:
                 return
 
+            try:
+                prune_ignored_dependencies(
+                    self.settings.aux_db_path, self.metadata_controller.mods_metadata
+                )
+            except Exception:
+                logger.exception("Could not prune ignored dependencies")
+
             # Insert mod data into list
             self.__repopulate_lists(is_initial=is_initial)
             self.mods_panel.refresh_all_tag_filter_selectors()
@@ -1094,8 +1105,9 @@ class MainContent(QObject):
 
         # Check for missing dependencies if enabled in settings and check_deps is True
         if check_deps and self.settings.check_dependencies_on_sort:
+            ignored = load_ignored_dependencies(self.settings.aux_db_path)
             deps_summary, missing_deps, dep_resolve = build_dependencies_dialog_context(
-                self.metadata_controller, active_mods
+                self.metadata_controller, active_mods, ignored
             )
             if missing_deps:
                 dialog = MissingDependenciesDialog(
@@ -1104,8 +1116,10 @@ class MainContent(QObject):
                 self.window_manager.register(dialog)
                 dialog.download_requested.connect(self._download_single_workshop_mod)
                 selected_deps = dialog.show_dialog(
-                    deps_summary, missing_deps, dep_resolve
+                    deps_summary, missing_deps, dep_resolve, ignored
                 )
+                if dialog.ignores_changed:
+                    self.mods_panel.recalculate_list_errors_warnings("Active")
 
                 if selected_deps:
                     # Add selected mods to active mods

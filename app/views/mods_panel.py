@@ -67,6 +67,11 @@ from app.models.divider import DividerData, generate_divider_uuid, is_divider_uu
 from app.models.filter_state import FilterState
 from app.models.metadata.metadata_structure import AboutXmlMod, ListedMod, ModType
 from app.models.settings import Settings
+from app.services.ignored_dependencies import (
+    IgnoredDependencies,
+    ignore_key,
+    load_ignored_dependencies,
+)
 from app.sort.mod_sorting import (
     _FOLDER_SIZE_CACHE,
     FolderSizeWorker,
@@ -3391,9 +3396,15 @@ class ModListWidget(QListWidget):
             self.mod_info_signal.emit(uuid, item)
 
     def _check_missing_dependencies(
-        self, mod_data: ListedMod, package_ids_set: set[str]
+        self,
+        mod_data: ListedMod,
+        package_ids_set: set[str],
+        ignored: IgnoredDependencies = frozenset(),
     ) -> tuple[set[str], set[str]]:
-        """Check for missing dependencies and alternative dependencies."""
+        """Check for missing dependencies and alternative dependencies.
+
+        :param ignored: (mod, dependency) pairs the user ignored.
+        """
         missing_deps: set[str] = set()
         alternative_deps: set[str] = set()
         if not isinstance(mod_data, AboutXmlMod):
@@ -3407,6 +3418,10 @@ class ModListWidget(QListWidget):
                 satisfied = any(alt in package_ids_set for alt in alt_ids)
             if not satisfied and self._has_replacement(
                 str(mod_data.package_id), str(dep_id), package_ids_set
+            ):
+                satisfied = True
+            if not satisfied and (
+                ignore_key(str(mod_data.package_id), str(dep_id)) in ignored
             ):
                 satisfied = True
 
@@ -3508,6 +3523,11 @@ class ModListWidget(QListWidget):
             if isinstance(mod, AboutXmlMod):
                 packageid_to_uuid[str(mod.package_id)] = uuid
         package_ids_set = set(packageid_to_uuid.keys())
+        ignored_dependencies: IgnoredDependencies = (
+            load_ignored_dependencies(self.settings.aux_db_path)
+            if self.list_type == "Active"
+            else frozenset()
+        )
 
         package_id_to_errors: dict[str, dict[str, None | set[str] | bool]] = {
             uuid: {
@@ -3688,7 +3708,9 @@ class ModListWidget(QListWidget):
                 (
                     mod_errors["missing_dependencies"],
                     mod_errors["alternative_dependencies"],
-                ) = self._check_missing_dependencies(mod_data, package_ids_set)
+                ) = self._check_missing_dependencies(
+                    mod_data, package_ids_set, ignored_dependencies
+                )
                 (
                     mod_errors["conflicting_incompatibilities"],
                     mod_errors["reverse_incompatibilities"],

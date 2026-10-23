@@ -1,11 +1,16 @@
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
 from PySide6.QtCore import Qt, QTimer
-from PySide6.QtWidgets import QLabel, QPushButton, QWidget
+from PySide6.QtWidgets import QCheckBox, QLabel, QPushButton, QWidget
 from pytestqt.qtbot import QtBot
 
 from app.services.dependency_resolver import DepResolveResult
+from app.services.ignored_dependencies import (
+    load_ignored_dependencies,
+    set_dependency_ignored,
+)
 from app.windows.missing_dependencies_dialog import MissingDependenciesDialog
 
 _LOCAL_DEPS_SUMMARY = {
@@ -43,7 +48,7 @@ def test_show_dialog_is_non_modal_and_returns_selected(
     dialog: MissingDependenciesDialog,
 ) -> None:
     def accept_with_selection() -> None:
-        dialog.checkboxes["dep.local"].setChecked(True)
+        dialog.checkboxes["dep.local"][0].setChecked(True)
         dialog.accept()
 
     QTimer.singleShot(100, accept_with_selection)
@@ -202,12 +207,12 @@ class TestShowSatisfiedToggle:
         dialog._deps_summary = _MIXED_DEPS_SUMMARY
         dialog._populate_dependencies(_MIXED_DEPS_SUMMARY)
 
-        dialog.checkboxes["dep.local"].setChecked(True)
+        dialog.checkboxes["dep.local"][0].setChecked(True)
         dialog.show_satisfied_checkbox.setChecked(True)
         dialog.show_satisfied_checkbox.setChecked(False)
 
         assert "dep.local" in dialog.selected_mods
-        assert dialog.checkboxes["dep.local"].isChecked()
+        assert dialog.checkboxes["dep.local"][0].isChecked()
 
     def test_all_satisfied_shows_fallback_and_toggle_reveals(
         self, dialog: MissingDependenciesDialog
@@ -224,3 +229,118 @@ class TestShowSatisfiedToggle:
 
         assert len(dialog.findChildren(QLabel, "satisfiedDepLabel")) == 1
         assert any("active.clean" in text for text in _header_texts(dialog))
+
+
+_SHARED_DEP_SUMMARY = {
+    "active.first": {"satisfied": set(), "local": {"dep.shared"}, "download": set()},
+    "active.second": {"satisfied": set(), "local": {"dep.shared"}, "download": set()},
+}
+
+
+def _show(
+    dialog: MissingDependenciesDialog,
+    summary: dict[str, dict[str, set[str]]],
+    ignored: frozenset[tuple[str, str]] = frozenset(),
+) -> None:
+    dialog._deps_summary = summary
+    dialog._ignored = set(ignored)
+    dialog._populate_dependencies(summary)
+
+
+def _ignore_boxes(dialog: MissingDependenciesDialog) -> list[QCheckBox]:
+    return dialog.findChildren(QCheckBox, "ignoreDependencyCheckbox")
+
+
+class TestRepeatedDependencies:
+    def test_select_all_ticks_every_copy(
+        self, dialog: MissingDependenciesDialog
+    ) -> None:
+        _show(dialog, _SHARED_DEP_SUMMARY)
+
+        dialog.select_all()
+
+        copies = dialog.checkboxes["dep.shared"]
+        assert len(copies) == 2
+        assert all(box.isChecked() for box in copies)
+        assert dialog.selected_mods == {"dep.shared"}
+
+    def test_copies_follow_each_other(self, dialog: MissingDependenciesDialog) -> None:
+        _show(dialog, _SHARED_DEP_SUMMARY)
+        first, second = dialog.checkboxes["dep.shared"]
+
+        second.setChecked(True)
+        assert first.isChecked()
+
+        first.setChecked(False)
+        assert not second.isChecked()
+        assert dialog.selected_mods == set()
+
+
+class TestIgnoreDependency:
+    @pytest.fixture(autouse=True)
+    def aux_db(self, metadata_controller: MagicMock, tmp_path: Path) -> Path:
+        db = tmp_path / "aux.db"
+        metadata_controller.settings.aux_db_path = db
+        return db
+
+    def test_ignore_saves_and_disables_the_row(
+        self, dialog: MissingDependenciesDialog, aux_db: Path
+    ) -> None:
+        _show(dialog, _LOCAL_DEPS_SUMMARY)
+        add_box = dialog.checkboxes["dep.local"][0]
+        add_box.setChecked(True)
+
+        _ignore_boxes(dialog)[0].setChecked(True)
+
+        assert load_ignored_dependencies(aux_db) == {("active.mod", "dep.local")}
+        assert dialog.ignores_changed
+        assert not add_box.isEnabled()
+        assert not add_box.isChecked()
+        assert dialog.selected_mods == set()
+
+        dialog.select_all()
+        assert not add_box.isChecked()
+
+        _ignore_boxes(dialog)[0].setChecked(False)
+        assert load_ignored_dependencies(aux_db) == frozenset()
+        assert add_box.isEnabled()
+
+    def test_ignoring_one_copy_keeps_the_other_selected(
+        self, dialog: MissingDependenciesDialog
+    ) -> None:
+        _show(dialog, _SHARED_DEP_SUMMARY)
+        dialog.select_all()
+
+        _ignore_boxes(dialog)[0].setChecked(True)
+
+        first, second = dialog.checkboxes["dep.shared"]
+        assert not first.isChecked()
+        assert second.isChecked()
+        assert dialog.selected_mods == {"dep.shared"}
+
+    def test_ignored_dependencies_are_hidden_until_shown(
+        self, dialog: MissingDependenciesDialog, aux_db: Path
+    ) -> None:
+        summary = {
+            "active.mod": {
+                "satisfied": set(),
+                "local": {"dep.local"},
+                "download": set(),
+                "ignored": {"dep.ignored"},
+            }
+        }
+        _show(dialog, summary, frozenset({("active.mod", "dep.ignored")}))
+        assert dialog.findChildren(QLabel, "ignoredDepLabel") == []
+        assert "(1)" in dialog.show_ignored_checkbox.text()
+
+        dialog.show_ignored_checkbox.setChecked(True)
+
+        labels = dialog.findChildren(QLabel, "ignoredDepLabel")
+        assert len(labels) == 1
+        assert "dep.ignored" in labels[0].text()
+        ignore_box = next(box for box in _ignore_boxes(dialog) if box.isChecked())
+        set_dependency_ignored(aux_db, "active.mod", "dep.ignored", True)
+
+        ignore_box.setChecked(False)
+
+        assert load_ignored_dependencies(aux_db) == frozenset()

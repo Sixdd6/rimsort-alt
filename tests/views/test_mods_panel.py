@@ -10,8 +10,10 @@ from app.models.metadata.metadata_structure import (
     AboutXmlMod,
     CaseInsensitiveSet,
     CaseInsensitiveStr,
+    DependencyMod,
 )
 from app.models.settings import Settings
+from app.services.ignored_dependencies import set_dependency_ignored
 from app.utils.custom_list_widget_item import CustomListWidgetItem
 from app.utils.custom_list_widget_item_metadata import CustomListWidgetItemMetadata
 from app.views.mods_panel import ModListItemInner, ModListWidget, TagEditDialog
@@ -21,8 +23,10 @@ def _make_active_mod_list(
     qtbot: Any,
     mods: dict[str, AboutXmlMod],
     paths: list[str],
+    aux_db_path: Path,
 ) -> ModListWidget:
     settings = MagicMock(spec=Settings)
+    settings.aux_db_path = aux_db_path
     settings.external_use_this_instead_metadata_source = "None"
     settings.show_save_comparison_indicators = False
     settings.mod_list_updated_indicator = False
@@ -256,6 +260,7 @@ class TestTagEditDialog:
 )
 def test_load_order_warning_header_matches_rule_direction(
     qtbot: Any,
+    tmp_path: Path,
     rule_name: str,
     paths: list[str],
     expected_header: str,
@@ -267,6 +272,7 @@ def test_load_order_warning_header_matches_rule_direction(
         qtbot,
         {"/mods/a": mod_a, "/mods/b": mod_b},
         paths,
+        tmp_path / "aux.db",
     )
 
     widget.recalculate_internal_errors_warnings()
@@ -279,11 +285,16 @@ def test_load_order_warning_header_matches_rule_direction(
     assert unexpected_header not in warning
 
 
-def test_load_order_in_rule_direction_has_no_warning(qtbot: Any) -> None:
+def test_load_order_in_rule_direction_has_no_warning(
+    qtbot: Any, tmp_path: Path
+) -> None:
     mod_a, mod_b = _alpha_beta_mods()
     mod_a.about_rules.load_before = CaseInsensitiveSet(["mod.b"])
     widget = _make_active_mod_list(
-        qtbot, {"/mods/a": mod_a, "/mods/b": mod_b}, ["/mods/a", "/mods/b"]
+        qtbot,
+        {"/mods/a": mod_a, "/mods/b": mod_b},
+        ["/mods/a", "/mods/b"],
+        tmp_path / "aux.db",
     )
 
     widget.recalculate_internal_errors_warnings()
@@ -293,8 +304,31 @@ def test_load_order_in_rule_direction_has_no_warning(qtbot: Any) -> None:
     assert item.data(Qt.ItemDataRole.UserRole).warnings == ""
 
 
-def test_row_changes_emit_one_list_update(qtbot: Any) -> None:
-    widget = _make_active_mod_list(qtbot, {}, [])
+@pytest.mark.parametrize("ignored", [False, True])
+def test_ignored_dependency_is_not_reported_missing(
+    qtbot: Any, tmp_path: Path, ignored: bool
+) -> None:
+    mod_a, _mod_b = _alpha_beta_mods()
+    mod_a.about_rules.dependencies = {
+        CaseInsensitiveStr("mod.missing"): DependencyMod(
+            package_id=CaseInsensitiveStr("mod.missing")
+        )
+    }
+    aux_db_path = tmp_path / "aux.db"
+    if ignored:
+        set_dependency_ignored(aux_db_path, "mod.a", "Mod.Missing", True)
+    widget = _make_active_mod_list(qtbot, {"/mods/a": mod_a}, ["/mods/a"], aux_db_path)
+
+    widget.recalculate_internal_errors_warnings()
+
+    item = widget.item(0)
+    assert item is not None
+    errors = item.data(Qt.ItemDataRole.UserRole).errors
+    assert ("mod.missing" in errors) is not ignored
+
+
+def test_row_changes_emit_one_list_update(qtbot: Any, tmp_path: Path) -> None:
+    widget = _make_active_mod_list(qtbot, {}, [], tmp_path / "aux.db")
     emitted: list[str] = []
     widget.list_update_signal.connect(emitted.append)
 

@@ -2789,6 +2789,10 @@ Select which missing dependencies to add to your active mods list.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>Show dependencies you chose to ignore, so you can stop ignoring them</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Select All</source>
         <translation>Выбрать все</translation>
     </message>
@@ -2803,6 +2807,10 @@ Select which missing dependencies to add to your active mods list.</source>
     <message>
         <source>No dependencies found for any active mod.</source>
         <translation>Для активных модов не найдено ни одной зависимости.</translation>
+    </message>
+    <message>
+        <source>Show ignored dependencies ({count})</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>&lt;b&gt;Summary:&lt;/b&gt; {total_deps} total dependencies across {mods_with_deps} mods — ✅ {total_satisfied} fulfilled, ⚠️ {total_missing} missing ({total_local} local, {total_download} download) across {total_missing_per_mod} mod(s)</source>
@@ -2829,6 +2837,14 @@ Select which missing dependencies to add to your active mods list.</source>
 All dependencies are satisfied. No missing dependencies found.</source>
         <translation>
 Все зависимости выполнены. Отсутствующих зависимостей не найдено.</translation>
+    </message>
+    <message>
+        <source>Ignore</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Stop reporting this dependency as missing for this mod</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Dependency Manager</source>

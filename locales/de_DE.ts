@@ -2786,6 +2786,10 @@ Wählen Sie aus, welche fehlenden Abhängigkeiten Sie zu Ihrer aktiven Mods-List
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>Show dependencies you chose to ignore, so you can stop ignoring them</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Select All</source>
         <translation>Wählen Sie alle aus</translation>
     </message>
@@ -2800,6 +2804,10 @@ Wählen Sie aus, welche fehlenden Abhängigkeiten Sie zu Ihrer aktiven Mods-List
     <message>
         <source>No dependencies found for any active mod.</source>
         <translation>Für keinen aktiven Mod wurden Abhängigkeiten gefunden.</translation>
+    </message>
+    <message>
+        <source>Show ignored dependencies ({count})</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>&lt;b&gt;Summary:&lt;/b&gt; {total_deps} total dependencies across {mods_with_deps} mods — ✅ {total_satisfied} fulfilled, ⚠️ {total_missing} missing ({total_local} local, {total_download} download) across {total_missing_per_mod} mod(s)</source>
@@ -2837,6 +2845,14 @@ Wählen Sie aus, welche fehlenden Abhängigkeiten Sie zu Ihrer aktiven Mods-List
         <source>
 All dependencies are satisfied. No missing dependencies found.</source>
         <translation>Alle Abhängigkeiten sind erfüllt. Keine fehlenden Abhängigkeiten gefunden.</translation>
+    </message>
+    <message>
+        <source>Ignore</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Stop reporting this dependency as missing for this mod</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Dependency Manager</source>

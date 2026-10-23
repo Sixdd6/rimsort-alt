@@ -8,6 +8,7 @@ from xml.etree.ElementTree import Element
 
 from app.controllers.metadata_controller import MetadataController
 from app.models.metadata.metadata_structure import AboutXmlMod
+from app.services.ignored_dependencies import IgnoredDependencies, ignore_key
 
 
 @dataclass
@@ -154,12 +155,17 @@ def resolve_dependency_workshop_id(
 def build_dependencies_dialog_context(
     metadata_controller: MetadataController,
     active_mod_paths: set[str],
+    ignored: IgnoredDependencies = frozenset(),
 ) -> tuple[
     dict[str, dict[str, set[str]]],
     dict[str, set[str]],
     dict[str, DepResolveResult],
 ]:
-    """Build deps summary, missing deps, and workshop ID resolve map for the dialog."""
+    """Build deps summary, missing deps, and workshop ID resolve map for the dialog.
+
+    Missing dependencies the user ignored for a mod go in its ``"ignored"``
+    set and are left out of the missing deps.
+    """
     mods_metadata = metadata_controller.mods_metadata
 
     active_ids: set[str] = set()
@@ -193,6 +199,7 @@ def build_dependencies_dialog_context(
         satisfied: set[str] = set()
         local: set[str] = set()
         download: set[str] = set()
+        ignored_deps: set[str] = set()
 
         for dep_id_key, dep_mod in dependencies.items():
             dep_id = str(dep_id_key)
@@ -204,6 +211,8 @@ def build_dependencies_dialog_context(
 
             if is_satisfied:
                 satisfied.add(dep_id)
+            elif ignore_key(mod_id, dep_id) in ignored:
+                ignored_deps.add(dep_id)
             else:
                 is_local = dep_id in all_local_package_ids or (
                     consider_alternatives
@@ -218,6 +227,7 @@ def build_dependencies_dialog_context(
             "satisfied": satisfied,
             "local": local,
             "download": download,
+            "ignored": ignored_deps,
         }
 
         if local or download:

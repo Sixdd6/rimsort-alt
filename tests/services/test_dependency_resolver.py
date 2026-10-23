@@ -15,6 +15,7 @@ from app.services.dependency_resolver import (
     parse_workshop_id_from_url,
     resolve_dependency_workshop_id,
 )
+from app.services.ignored_dependencies import ignore_key
 
 
 def _make_mod(
@@ -220,6 +221,32 @@ class TestResolveDependencyWorkshopId:
 
 
 class TestBuildDependenciesDialogContext:
+    def test_ignored_dep_is_not_missing(self) -> None:
+        parent = _make_mod(
+            "author.parent",
+            "/mods/parent",
+            dependencies={
+                dep: DependencyMod(package_id=CaseInsensitiveStr(dep))
+                for dep in ("Author.Ignored", "author.reported")
+            },
+        )
+        metadata = MagicMockMetadata(
+            mods_metadata={"/mods/parent": parent},
+            active_paths={"/mods/parent"},
+            steam_db_empty=True,
+        )
+
+        deps_summary, missing_deps, dep_resolve = build_dependencies_dialog_context(
+            cast(MetadataController, metadata),
+            {"/mods/parent"},
+            frozenset({ignore_key("author.parent", "author.ignored")}),
+        )
+
+        assert deps_summary["author.parent"]["ignored"] == {"author.ignored"}
+        assert deps_summary["author.parent"]["download"] == {"author.reported"}
+        assert missing_deps["author.parent"] == {"author.reported"}
+        assert set(dep_resolve) == {"author.reported"}
+
     def test_download_dep_gets_dep_resolve_with_workshop_id(self) -> None:
         parent = _make_mod(
             "author.parent",

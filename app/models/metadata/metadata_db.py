@@ -90,3 +90,15 @@ class TagsEntry(Base):
             return True
 
         return super().__eq__(other)
+
+
+class IgnoredDependencyEntry(Base):
+    """A dependency the user chose to stop being warned about for one mod."""
+
+    __tablename__ = "ignored_dependencies"
+
+    # Package IDs are stored lowercase
+    mod_package_id: Mapped[str] = mapped_column(String, primary_key=True)
+    dependency_package_id: Mapped[str] = mapped_column(String, primary_key=True)
+    # Last refresh that found the mod installed and still declaring the dependency
+    last_seen: Mapped[datetime] = mapped_column(DateTime, default=func.now())
