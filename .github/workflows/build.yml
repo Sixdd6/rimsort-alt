@@ -92,12 +92,6 @@ jobs:
           fi
         shell: bash
 
-      - name: Remove problematic brew libs
-        run: |
-          brew remove --force --ignore-dependencies openssl@3
-          brew cleanup openssl@3
-        if: runner.os == 'macos' && matrix.arch == 'x86_64'
-
       - name: Get semantic version
         id: sem_version
         uses: PaulHatch/semantic-version@v6.0.4
@@ -133,9 +127,31 @@ jobs:
           enable-cache: true
           activate-environment: true
 
+      # cryptography >= 49 ships no Intel macOS wheels, so it is compiled
+      # here. Link Homebrew's OpenSSL statically: the brew dylibs are removed
+      # below so the packaged app never depends on them.
+      - name: Link OpenSSL statically for the cryptography build
+        if: runner.os == 'macos' && matrix.arch == 'x86_64'
+        shell: bash
+        run: |
+          echo "OPENSSL_DIR=$(brew --prefix openssl@3)" >> "$GITHUB_ENV"
+          echo "OPENSSL_STATIC=1" >> "$GITHUB_ENV"
+
       - name: Install Dependencies
         shell: bash
         run: uv sync --locked --no-dev --group build
+
+      - name: Remove problematic brew libs
+        if: runner.os == 'macos' && matrix.arch == 'x86_64'
+        shell: bash
+        run: |
+          rust_ext=$(python -c "import cryptography.hazmat.bindings._rust as m; print(m.__file__)")
+          if otool -L "$rust_ext" | grep -i -E "libssl|libcrypto"; then
+            echo "::error::cryptography links a shared OpenSSL: $rust_ext"
+            exit 1
+          fi
+          brew remove --force --ignore-dependencies openssl@3
+          brew cleanup openssl@3
 
       - name: Compile translations
         shell: bash
