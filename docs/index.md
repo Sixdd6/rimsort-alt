@@ -88,4 +88,3 @@ We aim to foster a welcoming community.
 [Repo]: https://github.com/Sixdd6/rimsort-alt
 [Issues]: https://github.com/Sixdd6/rimsort-alt/issues
 [Releases]: https://github.com/Sixdd6/rimsort-alt/releases
-[Discord]: https://discord.gg/aV7g69JmR2

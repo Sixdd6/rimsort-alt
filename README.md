@@ -3,7 +3,7 @@
     <p align="center">A free and open source multi-platform mod manager for the video game RimWorld.<br>
     Built from the ground up to be reliable and community managed.<br>
     Includes support for Linux, Mac, and Windows.</p>
-    <p align="center"><strong><a href="https://github.com/Sixdd6/rimsort-alt/releases">Releases</a> | <a href="https://sixdd6.github.io/rimsort-alt/">Wiki</a> | <a href="https://discord.gg/aV7g69JmR2">Discord</a></strong> </p>
+    <p align="center"><strong><a href="https://github.com/Sixdd6/rimsort-alt/releases">Releases</a> | <a href="https://sixdd6.github.io/rimsort-alt/">Wiki</a> | <a href="https://github.com/Sixdd6/rimsort-alt/issues">Issues</a></strong> </p>
     <p align="center">
         <a href="https://codecov.io/gh/RimSort/RimSort"><img src="https://codecov.io/gh/RimSort/RimSort/graph/badge.svg" alt="codecov"></a>
     </p>
@@ -56,7 +56,7 @@ Interested in helping translate RimSort to your language? Check out our [Transla
 
 If you have an issue, make sure you **checked the [wiki][Wiki]** for a solution.
 
-[![Join us on Discord](https://github-production-user-asset-6210df.s3.amazonaws.com/2766946/248529301-486f4f8c-fed5-4fe1-832f-6461b7ce3a55.png)][Discord]
+RimSort Alt is a fork of RimSort. Please report problems with it on our [issue tracker][Issues], not to the upstream RimSort project or its Discord.
 
 ## Credits
 
@@ -65,4 +65,3 @@ If you have an issue, make sure you **checked the [wiki][Wiki]** for a solution.
 [Wiki]: https://sixdd6.github.io/rimsort-alt/
 [Issues]: https://github.com/Sixdd6/rimsort-alt/issues
 [Releases]: https://github.com/Sixdd6/rimsort-alt/releases
-[Discord]: https://discord.gg/aV7g69JmR2

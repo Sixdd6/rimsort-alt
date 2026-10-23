@@ -89,4 +89,3 @@ RimSort 采用 [GPL-3.0 协议](https://github.com/Sixdd6/rimsort-alt/tree/main/
 [Repo]: https://github.com/Sixdd6/rimsort-alt
 [Issues]: https://github.com/Sixdd6/rimsort-alt/issues
 [Releases]: https://github.com/Sixdd6/rimsort-alt/releases
-[Discord]: https://discord.gg/aV7g69JmR2
