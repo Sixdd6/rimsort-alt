@@ -101,6 +101,8 @@ chmod +x RimSort-*.AppImage
 
 **Self-updates:** When running as an AppImage, RimSort's built-in updater replaces the AppImage file in place (the old version is backed up to `.bak` and cleaned up on the next launch).
 
+**Delta updates:** The AppImage carries zsync update information, and each release publishes a matching `.zsync` file. Tools such as [AppImageUpdate](https://github.com/AppImageCommunity/AppImageUpdate), AppImageLauncher and [Gear Lever](https://github.com/mijorus/gearlever) can therefore update it by downloading only the parts that changed. Stable AppImages follow the latest stable release, and Edge AppImages follow the Edge release.
+
 ### Ubuntu Tarball
 
 Pre-built tarball releases are compiled on Ubuntu 22.04 and 24.04. These may also work on other Debian-based distributions or distributions with compatible glibc and library versions, but this is not guaranteed.

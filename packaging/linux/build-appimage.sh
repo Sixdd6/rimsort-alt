@@ -140,10 +140,20 @@ done
 # Build the AppImage using appimagetool directly.
 # We skip linuxdeploy because Nuitka already bundles all dependencies —
 # linuxdeploy's --executable flag would run patchelf and corrupt Nuitka's RPATHs.
+# Embed zsync update information when the CI names a release channel
+# (APPIMAGE_UPDATE_RELEASE=latest or Edge). AppImageUpdate, AppImageLauncher
+# and Gear Lever read it to fetch only the changed blocks of a new release.
+UPDATE_ARGS=()
+if [[ -n "${APPIMAGE_UPDATE_RELEASE:-}" && -n "${GITHUB_REPOSITORY:-}" ]]; then
+	UPDATE_INFO="gh-releases-zsync|${GITHUB_REPOSITORY%%/*}|${GITHUB_REPOSITORY#*/}|${APPIMAGE_UPDATE_RELEASE}|RimSort-*-${APPIMAGE_ARCH}.AppImage.zsync"
+	echo "Embedding update information: ${UPDATE_INFO}"
+	UPDATE_ARGS=(--updateinformation "$UPDATE_INFO")
+fi
 echo "Running appimagetool..."
 export VERSION
 ARCH="$APPIMAGE_ARCH" "$APPIMAGETOOL_CMD" \
 	--mksquashfs-opt -Xcompression-level --mksquashfs-opt 19 \
+	"${UPDATE_ARGS[@]}" \
 	"$APPDIR" "$OUTPUT"
 
 echo "=== AppImage built successfully ==="

@@ -273,7 +273,17 @@ jobs:
 
       - name: Build AppImage
         if: matrix.platform == 'Ubuntu-22.04'
+        env:
+          VERSION_FORMAT: ${{ inputs.version_format }}
         run: |
+          # The release the AppImage's zsync update information follows:
+          # stable builds track the latest release, Edge builds the Edge tag,
+          # PR/auto builds are not published and carry none.
+          case "$VERSION_FORMAT" in
+          *-edge*) export APPIMAGE_UPDATE_RELEASE=Edge ;;
+          *-auto*) ;;
+          *) export APPIMAGE_UPDATE_RELEASE=latest ;;
+          esac
           bash packaging/linux/build-appimage.sh \
             "build/${{ matrix.env.BUILD_OUTPUT }}" \
             "${{ steps.sem_version.outputs.major }}.${{ steps.sem_version.outputs.minor }}.${{ steps.sem_version.outputs.patch }}"

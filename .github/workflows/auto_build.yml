@@ -132,6 +132,9 @@ jobs:
         with:
           path: artifacts
 
+      - name: Install zsync
+        run: sudo apt-get install -y zsync
+
       - name: Package artifacts
         run: |
           mv artifacts/Windows_x86_64_msi artifacts/msi
@@ -148,6 +151,8 @@ jobs:
               cd "$artifact"
               name="RimSort-$VERSION-x86_64.AppImage"
               mv ./*.AppImage "../$name"
+              # Made after the rename: the .zsync records the file's URL
+              zsyncmake -u "${name//+/%2B}" -o "../$name.zsync" "../$name"
               cd ..
             else
               base=${file%%.tar}
@@ -166,7 +171,7 @@ jobs:
           done
           wait
           shopt -s extglob
-          rm -rf -- ./!(*.zip|*.tar.gz|*.msi|*.AppImage)
+          rm -rf -- ./!(*.zip|*.tar.gz|*.msi|*.AppImage|*.zsync)
         shell: bash
         env:
           VERSION: ${{ needs.pre-build.outputs.version }}
@@ -182,7 +187,7 @@ jobs:
       - name: Create Edge Release
         uses: ncipollo/release-action@339a81892b84b4eeb0f6e744e4574d79d0d9b8dd # v1.21.0
         with:
-          artifacts: "artifacts/*.zip,artifacts/*.tar.gz,artifacts/*.msi,artifacts/*.AppImage"
+          artifacts: "artifacts/*.zip,artifacts/*.tar.gz,artifacts/*.msi,artifacts/*.AppImage,artifacts/*.zsync"
           tag: Edge
           name: "Edge Build (Unstable)"
           generateReleaseNotes: true
