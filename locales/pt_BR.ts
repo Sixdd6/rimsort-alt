@@ -5779,8 +5779,8 @@ Escolha uma das opções a seguir para continuar.</translation>
         <translation>O RimSort não conseguiu detectar o cliente Steam ou ele pode não responder.&lt;br&gt;&lt;br&gt;Certifique-se de que o Steam esteja instalado e em execução.&lt;br&gt;&lt;br&gt;Se você for um usuário do Steam, verifique se o Steam está em execução e se você está conectado.&lt;br&gt;&lt;br&gt;Tente reiniciar o Steam.</translation>
     </message>
     <message>
-        <source>If you are still facing issues even after Steam is installed and running, please report this issue to https://github.com/RimSort/RimSort/issues</source>
-        <translation>Se você ainda estiver enfrentando problemas mesmo depois que o Steam estiver instalado e em execução, relate o problema para https://github.com/RimSort/RimSort/issues</translation>
+        <source>If you are still facing issues even after Steam is installed and running, please report this issue to {issues_url}</source>
+        <translation>Se você ainda estiver enfrentando problemas mesmo depois que o Steam estiver instalado e em execução, relate o problema para {issues_url}</translation>
     </message>
     <message>
         <source>Snap Steam Detected</source>

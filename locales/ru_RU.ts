@@ -5781,8 +5781,8 @@ Please choose one of the following options to proceed.</source>
         <translation>RimSort не смог обнаружить клиент Steam, либо он не отвечает.&lt;br&gt;&lt;br&gt;Убедитесь, что Steam установлен и запущен.&lt;br&gt;&lt;br&gt;Если вы пользуетесь Steam, проверьте, что он запущен и вы вошли в систему.&lt;br&gt;&lt;br&gt;Попробуйте перезапустить Steam.</translation>
     </message>
     <message>
-        <source>If you are still facing issues even after Steam is installed and running, please report this issue to https://github.com/RimSort/RimSort/issues</source>
-        <translation>Если проблема сохраняется даже при установленном и запущенном Steam, сообщите о ней на https://github.com/RimSort/RimSort/issues</translation>
+        <source>If you are still facing issues even after Steam is installed and running, please report this issue to {issues_url}</source>
+        <translation>Если проблема сохраняется даже при установленном и запущенном Steam, сообщите о ней на {issues_url}</translation>
     </message>
     <message>
         <source>Snap Steam Detected</source>

@@ -5775,8 +5775,8 @@ Please choose one of the following options to proceed.</source>
         <translation>RimSort 無法偵測到 Steam 用戶端，或者可能沒有回應。 &lt;br&gt;&lt;br&gt;請確保 Steam 已安裝並正在運作。 &lt;br&gt;&lt;br&gt;如果您是 Steam 用戶，請檢查 Steam 是否正在運行並且您是否已登入。 &lt;br&gt;&lt;br&gt;嘗試重新啟動 Steam。</translation>
     </message>
     <message>
-        <source>If you are still facing issues even after Steam is installed and running, please report this issue to https://github.com/RimSort/RimSort/issues</source>
-        <translation>如果在安裝並執行 Steam 後您仍然遇到問題，請將此問題回報給 https://github.com/RimSort/RimSort/issues</translation>
+        <source>If you are still facing issues even after Steam is installed and running, please report this issue to {issues_url}</source>
+        <translation>如果在安裝並執行 Steam 後您仍然遇到問題，請將此問題回報給 {issues_url}</translation>
     </message>
     <message>
         <source>Snap Steam Detected</source>

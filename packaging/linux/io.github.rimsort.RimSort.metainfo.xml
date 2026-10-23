@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
     <id>io.github.rimsort.RimSort</id>
-    <url type="homepage">https://rimsort.github.io/RimSort/</url>
-    <url type="vcs-browser">https://github.com/RimSort/RimSort</url>
+    <url type="homepage">https://sixdd6.github.io/rimsort-alt/</url>
+    <url type="vcs-browser">https://github.com/Sixdd6/rimsort-alt</url>
 
     <name>RimSort</name>
     <summary>Mod manager for RimWorld</summary>

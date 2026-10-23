@@ -12,6 +12,6 @@ RimSort 采用 copy-left 的许可证开源。我们欢迎任何形式的贡献�
 
 源代码已完整开放，你可以通过 Python 解释运行 RimSort，或自行编译使用。
 
-贡献者需遵守 [我们的行为准则](https://github.com/RimSort/RimSort/tree/main/CODE_OF_CONDUCT.md) 和 [贡献指南](../development-guide/contributor-guidelines.zh-cn)。
+贡献者需遵守 [我们的行为准则](https://github.com/Sixdd6/rimsort-alt/tree/main/CODE_OF_CONDUCT.md) 和 [贡献指南](../development-guide/contributor-guidelines.zh-cn)。
 
-[Issues]: https://github.com/RimSort/RimSort/issues
+[Issues]: https://github.com/Sixdd6/rimsort-alt/issues

@@ -11,6 +11,6 @@ RimSort — открытый проект (copyleft). Багрепорты — �
 
 Запуск из исходников: Python 3.14, `uv run python -m app`. Тесты: `just test`.
 
-Следуйте [Code of Conduct](https://github.com/RimSort/RimSort/tree/main/CODE_OF_CONDUCT.md) и [Contributor Guidelines](../development-guide/contributor-guidelines).
+Следуйте [Code of Conduct](https://github.com/Sixdd6/rimsort-alt/tree/main/CODE_OF_CONDUCT.md) и [Contributor Guidelines](../development-guide/contributor-guidelines).
 
-[Issues]: https://github.com/RimSort/RimSort/issues
+[Issues]: https://github.com/Sixdd6/rimsort-alt/issues

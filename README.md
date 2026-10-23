@@ -3,7 +3,7 @@
     <p align="center">A free and open source multi-platform mod manager for the video game RimWorld.<br>
     Built from the ground up to be reliable and community managed.<br>
     Includes support for Linux, Mac, and Windows.</p>
-    <p align="center"><strong><a href="https://github.com/RimSort/RimSort/releases">Releases</a> | <a href="https://rimsort.github.io/RimSort/">Wiki</a> | <a href="https://discord.gg/aV7g69JmR2">Discord</a></strong> </p>
+    <p align="center"><strong><a href="https://github.com/Sixdd6/rimsort-alt/releases">Releases</a> | <a href="https://sixdd6.github.io/rimsort-alt/">Wiki</a> | <a href="https://discord.gg/aV7g69JmR2">Discord</a></strong> </p>
     <p align="center">
         <a href="https://codecov.io/gh/RimSort/RimSort"><img src="https://codecov.io/gh/RimSort/RimSort/graph/badge.svg" alt="codecov"></a>
     </p>
@@ -18,7 +18,7 @@ To install RimSort, visit the [Releases][Releases] page and download the latest 
 
 For Windows and Linux, unzip the download and run the `RimSort` executable inside the unzipped folder.
 
-For macOS, make sure you grab the appropriate release per your CPU (x86_64 is for an Intel CPU Mac, ARM64 is for an Apple M1/M2 CPU Mac). You may need to follow [special instructions](https://rimsort.github.io/RimSort/user-guide/downloading-and-installing#macos) to get around Gatekeeper errors.
+For macOS, make sure you grab the appropriate release per your CPU (x86_64 is for an Intel CPU Mac, ARM64 is for an Apple M1/M2 CPU Mac). You may need to follow [special instructions](https://sixdd6.github.io/rimsort-alt/user-guide/downloading-and-installing#macos) to get around Gatekeeper errors.
 
 Check the [wiki][Wiki] for more detailed instructions.
 
@@ -50,7 +50,7 @@ Bugs and feature requests are tracked in the [Issues][Issues] section of this re
 
 See the [wiki][Wiki] for detailed instructions on building RimSort yourself as well as guidelines for making pull requests.
 
-Interested in helping translate RimSort to your language? Check out our [Translation Guidelines](https://rimsort.github.io/RimSort/development-guide/translation-guidelines) for detailed instructions on how to contribute translations.
+Interested in helping translate RimSort to your language? Check out our [Translation Guidelines](https://sixdd6.github.io/rimsort-alt/development-guide/translation-guidelines) for detailed instructions on how to contribute translations.
 
 ## FAQ and Issues
 
@@ -62,7 +62,7 @@ If you have an issue, make sure you **checked the [wiki][Wiki]** for a solution.
 
 - "Update" icon by [Icons8](https://icons8.com) ([icon link](https://icons8.com/icon/aPgBhcyogqyV/update)).
 
-[Wiki]: https://rimsort.github.io/RimSort/
-[Issues]: https://github.com/RimSort/RimSort/issues
-[Releases]: https://github.com/RimSort/RimSort/releases
+[Wiki]: https://sixdd6.github.io/rimsort-alt/
+[Issues]: https://github.com/Sixdd6/rimsort-alt/issues
+[Releases]: https://github.com/Sixdd6/rimsort-alt/releases
 [Discord]: https://discord.gg/aV7g69JmR2

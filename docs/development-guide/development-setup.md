@@ -65,7 +65,7 @@ RimSort uses submodules that are hosted in other repositories that need to be cl
 To clone with submodules run:
 
 ```shell
-git clone --recurse-submodules -j8 https://github.com/RimSort/RimSort
+git clone --recurse-submodules -j8 https://github.com/Sixdd6/rimsort-alt
 ```
 
 Should you need to update these submodules, or you forgot to clone with `--recurse-submodules`, run:

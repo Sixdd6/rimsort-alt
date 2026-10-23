@@ -5769,8 +5769,8 @@ Please choose one of the following options to proceed.</source>
         <translation>rimSort が Steam クライアントを検出できなかったか、応答していない可能性があります。&lt;br&gt;&lt;br&gt;Steam がインストールされ、実行中であることを確認してください。&lt;br&gt;&lt;br&gt;Steam ユーザーの場合は、Steam が実行中であり、ログインしていることを確認してください。&lt;br&gt;&lt;br&gt;Steam を再起動してみてください。</translation>
     </message>
     <message>
-        <source>If you are still facing issues even after Steam is installed and running, please report this issue to https://github.com/RimSort/RimSort/issues</source>
-        <translation>Steam をインストールして実行した後でも問題が解決しない場合は、この問題を https://github.com/RimSort/RimSort/issues に報告してください。</translation>
+        <source>If you are still facing issues even after Steam is installed and running, please report this issue to {issues_url}</source>
+        <translation>Steam をインストールして実行した後でも問題が解決しない場合は、この問題を {issues_url} に報告してください。</translation>
     </message>
     <message>
         <source>Snap Steam Detected</source>

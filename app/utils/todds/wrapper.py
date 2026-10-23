@@ -9,6 +9,7 @@ from loguru import logger
 from PySide6.QtCore import QCoreApplication
 
 from app.utils.app_info import AppInfo
+from app.utils.constants import APP_DOCS_URL, APP_ISSUES_URL
 
 
 class ToddsRunner(Protocol):
@@ -148,10 +149,8 @@ class ToddsInterface:
             logger.info(f"Executing todds with arguments: {args} in {self.cwd}")
         else:
             logger.error("Todds executable not found.")
-            development_guide_url = (
-                "https://rimsort.github.io/RimSort/development-guide/development-setup"
-            )
-            support_url = "https://github.com/RimSort/RimSort/issues"
+            development_guide_url = f"{APP_DOCS_URL}development-guide/development-setup"
+            support_url = APP_ISSUES_URL
             todds_error_message = QCoreApplication.translate(
                 "ToddsInterface",
                 "ERROR: todds was not found. If you are running from source, please ensure you have followed the correct steps in the {development_guide_url} \n\n"

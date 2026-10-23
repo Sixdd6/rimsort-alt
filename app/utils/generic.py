@@ -23,6 +23,7 @@ from PySide6.QtWidgets import QApplication
 
 from app.services.game_layout_service import find_game_executable, resolve_game_layout
 from app.utils import http
+from app.utils.constants import APP_ISSUES_URL
 from app.utils.launch_command_parser import parse_launch_command
 from app.utils.platform.windows import scanpath_win32
 from app.views import dialogue
@@ -869,8 +870,8 @@ def show_no_steam_warning() -> None:
         ),
         details=translate(
             "SteamworksInterface",
-            "If you are still facing issues even after Steam is installed and running, please report this issue to https://github.com/RimSort/RimSort/issues",
-        ),
+            "If you are still facing issues even after Steam is installed and running, please report this issue to {issues_url}",
+        ).format(issues_url=APP_ISSUES_URL),
     )
 
 

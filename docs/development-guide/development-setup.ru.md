@@ -66,7 +66,7 @@ RimSort использует сабмодули, размещённые в др�
 Чтобы клонировать с сабмодулями, выполните:
 
 ```shell
-git clone --recurse-submodules -j8 https://github.com/RimSort/RimSort
+git clone --recurse-submodules -j8 https://github.com/Sixdd6/rimsort-alt
 ```
 
 Если нужно обновить сабмодули или вы забыли клонировать с `--recurse-submodules`, выполните:

@@ -5769,8 +5769,8 @@ Lütfen devam etmek için aşağıdaki seçeneklerden birini seçin.</translatio
         <translation>RimSort, Steam istemcisini algılayamadı veya yanıt vermiyor olabilir.&lt;br&gt;&lt;br&gt;Lütfen Steam&apos;in kurulu ve çalışır durumda olduğundan emin olun.&lt;br&gt;&lt;br&gt;Eğer Steam kullanıcısıysanız, lütfen Steam&apos;in çalıştığını ve oturum açtığınızı kontrol edin.&lt;br&gt;&lt;br&gt;Steam&apos;i yeniden başlatmayı deneyin.</translation>
     </message>
     <message>
-        <source>If you are still facing issues even after Steam is installed and running, please report this issue to https://github.com/RimSort/RimSort/issues</source>
-        <translation>Steam yüklenip çalıştırıldıktan sonra bile hala sorunlarla karşılaşıyorsanız lütfen bu sorunu https://github.com/RimSort/RimSort/issues adresine bildirin.</translation>
+        <source>If you are still facing issues even after Steam is installed and running, please report this issue to {issues_url}</source>
+        <translation>Steam yüklenip çalıştırıldıktan sonra bile hala sorunlarla karşılaşıyorsanız lütfen bu sorunu {issues_url} adresine bildirin.</translation>
     </message>
     <message>
         <source>Snap Steam Detected</source>

@@ -5701,7 +5701,7 @@ Please choose one of the following options to proceed.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>If you are still facing issues even after Steam is installed and running, please report this issue to https://github.com/RimSort/RimSort/issues</source>
+        <source>If you are still facing issues even after Steam is installed and running, please report this issue to {issues_url}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

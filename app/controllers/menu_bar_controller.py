@@ -6,6 +6,7 @@ from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QApplication, QLineEdit, QPlainTextEdit, QTextEdit
 
 from app.models.settings import Settings
+from app.utils.constants import APP_DOCS_URL, APP_REPOSITORY_URL
 from app.utils.event_bus import EventBus
 from app.utils.generic import open_url_browser
 from app.utils.gui_info import show_dialogue_conditional
@@ -293,11 +294,11 @@ class MenuBarController(QObject):
 
     @Slot()
     def _on_menu_bar_wiki_triggered(self) -> None:
-        open_url_browser("https://rimsort.github.io/RimSort/")
+        open_url_browser(APP_DOCS_URL)
 
     @Slot()
     def _on_menu_bar_github_triggered(self) -> None:
-        open_url_browser("https://github.com/RimSort/RimSort")
+        open_url_browser(APP_REPOSITORY_URL)
 
     @Slot()
     def _on_refresh_started(self) -> None:

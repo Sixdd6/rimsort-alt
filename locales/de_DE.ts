@@ -5767,8 +5767,8 @@ Bitte wählen Sie eine der folgenden Optionen, um fortzufahren.</translation>
         <translation>RimSort konnte den Steam-Client nicht erkennen oder reagiert möglicherweise nicht.&lt;br&gt;&lt;br&gt;Bitte stellen Sie sicher, dass Steam installiert ist und ausgeführt wird.&lt;br&gt;&lt;br&gt;Wenn Sie Steam-Benutzer sind, überprüfen Sie bitte, ob Steam ausgeführt wird und ob Sie angemeldet sind.&lt;br&gt;&lt;br&gt;Versuchen Sie, Steam neu zu starten.</translation>
     </message>
     <message>
-        <source>If you are still facing issues even after Steam is installed and running, please report this issue to https://github.com/RimSort/RimSort/issues</source>
-        <translation>Wenn Sie auch nach der Installation und Ausführung von Steam weiterhin Probleme haben, melden Sie dieses Problem bitte an https://github.com/RimSort/RimSort/issues</translation>
+        <source>If you are still facing issues even after Steam is installed and running, please report this issue to {issues_url}</source>
+        <translation>Wenn Sie auch nach der Installation und Ausführung von Steam weiterhin Probleme haben, melden Sie dieses Problem bitte an {issues_url}</translation>
     </message>
     <message>
         <source>Snap Steam Detected</source>

@@ -6,6 +6,12 @@ from typing import Any
 # carry over.
 APP_DISPLAY_NAME = "RimSort Alt"
 
+# Where this fork lives: help links, issue reports and updates point here
+APP_REPOSITORY = "Sixdd6/rimsort-alt"
+APP_REPOSITORY_URL = f"https://github.com/{APP_REPOSITORY}"
+APP_ISSUES_URL = f"{APP_REPOSITORY_URL}/issues"
+APP_DOCS_URL = "https://sixdd6.github.io/rimsort-alt/"
+
 # Instance constants
 DEFAULT_INSTANCE_NAME = "Default"
 INSTANCE_FOLDER_NAME = "instances"

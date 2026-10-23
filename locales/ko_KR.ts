@@ -5769,8 +5769,8 @@ Please choose one of the following options to proceed.</source>
         <translation>RimSort가 Steam 클라이언트를 감지할 수 없거나 응답하지 않을 수 있습니다.&lt;br&gt;&lt;br&gt;Steam이 설치되어 실행 중인지 확인하세요.&lt;br&gt;&lt;br&gt;Steam 사용자라면 Steam이 실행 중이고 로그인되어 있는지 확인하세요.&lt;br&gt;&lt;br&gt;Steam을 다시 시작해 보세요.</translation>
     </message>
     <message>
-        <source>If you are still facing issues even after Steam is installed and running, please report this issue to https://github.com/RimSort/RimSort/issues</source>
-        <translation>Steam을 설치하고 실행한 후에도 여전히 문제가 발생하는 경우 이 문제를 https://github.com/RimSort/RimSort/issues에 보고해 주세요.</translation>
+        <source>If you are still facing issues even after Steam is installed and running, please report this issue to {issues_url}</source>
+        <translation>Steam을 설치하고 실행한 후에도 여전히 문제가 발생하는 경우 이 문제를 {issues_url}에 보고해 주세요.</translation>
     </message>
     <message>
         <source>Snap Steam Detected</source>

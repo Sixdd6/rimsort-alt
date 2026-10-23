@@ -9,7 +9,7 @@ RimSort is a free and open-source multi-platform mod manager and sorter for RimW
 
 ## Setup
 
-- Clone with submodules: `git clone --recurse-submodules https://github.com/RimSort/RimSort`
+- Clone with submodules: `git clone --recurse-submodules https://github.com/Sixdd6/rimsort-alt`
 - If submodules are missing: `git submodule update --init --recursive`
 - Prerequisites: git, Python 3.14, [uv](https://docs.astral.sh/uv/), [just](https://just.systems/). The full Unix `just check` runs `nix flake check` (Nix required; skipped with a warning when absent). The Windows recipe additionally needs Node/npx (jscpd, markdownlint) and shfmt.
 - `just dev-setup` — creates venv, `uv sync --locked --dev --group build`, compiles locales. Do this first.

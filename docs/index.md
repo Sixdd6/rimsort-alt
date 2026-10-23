@@ -67,7 +67,7 @@ Features all the basic functionality you'd expect from a mod manager plus extras
 
 ### License
 
-RimSort is distributed by a [GPL-3.0 license](https://github.com/RimSort/RimSort/tree/main/LICENSE.md)
+RimSort is distributed by a [GPL-3.0 license](https://github.com/Sixdd6/rimsort-alt/tree/main/LICENSE.md)
 
 ### Thank you to our contributors!
 
@@ -82,10 +82,10 @@ RimSort is distributed by a [GPL-3.0 license](https://github.com/RimSort/RimSort
 ### Code of Conduct
 
 We aim to foster a welcoming community.
-[View our Code of Conduct](https://github.com/RimSort/RimSort/tree/main/CODE_OF_CONDUCT.md) on our GitHub repository.
+[View our Code of Conduct](https://github.com/Sixdd6/rimsort-alt/tree/main/CODE_OF_CONDUCT.md) on our GitHub repository.
 
 [Wiki]: https://sixdd6.github.io/rimsort-alt
-[Repo]: https://github.com/RimSort/RimSort
-[Issues]: https://github.com/RimSort/RimSort/issues
+[Repo]: https://github.com/Sixdd6/rimsort-alt
+[Issues]: https://github.com/Sixdd6/rimsort-alt/issues
 [Releases]: https://github.com/Sixdd6/rimsort-alt/releases
 [Discord]: https://discord.gg/aV7g69JmR2

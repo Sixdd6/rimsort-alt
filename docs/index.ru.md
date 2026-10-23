@@ -59,7 +59,7 @@ RimSort — менеджер и сортировщик модов для [RimWor
 
 ### Лицензия
 
-RimSort распространяется по [лицензии GPL-3.0](https://github.com/RimSort/RimSort/tree/main/LICENSE.md).
+RimSort распространяется по [лицензии GPL-3.0](https://github.com/Sixdd6/rimsort-alt/tree/main/LICENSE.md).
 
 ### Спасибо нашим контрибьюторам!
 
@@ -74,7 +74,7 @@ RimSort распространяется по [лицензии GPL-3.0](https:/
 ### Кодекс поведения
 
 Мы стремимся к дружелюбному сообществу.
-[См. наш Кодекс поведения](https://github.com/RimSort/RimSort/tree/main/CODE_OF_CONDUCT.md) в репозитории GitHub.
+[См. наш Кодекс поведения](https://github.com/Sixdd6/rimsort-alt/tree/main/CODE_OF_CONDUCT.md) в репозитории GitHub.
 
 [Wiki]: https://sixdd6.github.io/rimsort-alt
 [Releases]: https://github.com/Sixdd6/rimsort-alt/releases

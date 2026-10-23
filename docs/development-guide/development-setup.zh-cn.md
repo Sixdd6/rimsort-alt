@@ -66,7 +66,7 @@ RimSort 使用托管在其他仓库中的子模块，需要同步克隆。
 带子模块克隆：
 
 ```shell
-git clone --recurse-submodules -j8 https://github.com/RimSort/RimSort
+git clone --recurse-submodules -j8 https://github.com/Sixdd6/rimsort-alt
 ```
 
 如需更新这些子模块，或忘记使用 `--recurse-submodules` 克隆，请运行：

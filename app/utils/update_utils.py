@@ -28,6 +28,7 @@ from PySide6.QtWidgets import QMessageBox
 from app.models.animations import WorkThread
 from app.utils import http
 from app.utils.app_info import AppInfo
+from app.utils.constants import APP_REPOSITORY
 from app.utils.generic import probe_internet_connection
 from app.utils.zip_extractor import (
     BadZipFile,
@@ -46,7 +47,7 @@ TAG_PREFIX_PATTERN = re.compile(r"^v", re.IGNORECASE)
 
 # API and network constants
 # GitHub repository whose releases this build updates from
-UPDATE_REPOSITORY = "Sixdd6/rimsort-alt"
+UPDATE_REPOSITORY = APP_REPOSITORY
 GITHUB_API_URL = f"https://api.github.com/repos/{UPDATE_REPOSITORY}/releases/latest"
 RELEASES_PAGE_URL = f"https://github.com/{UPDATE_REPOSITORY}/releases"
 # CI's Edge/auto build versions: v<major>.<minor>.<patch>-edge<n>[+<sha>]

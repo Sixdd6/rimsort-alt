@@ -12,7 +12,7 @@ from app.models.divider import is_divider_uuid
 from app.models.metadata.metadata_structure import AboutXmlMod, ModType
 from app.models.settings import Settings
 from app.utils.app_info import AppInfo
-from app.utils.constants import APP_DISPLAY_NAME
+from app.utils.constants import APP_DISPLAY_NAME, APP_REPOSITORY_URL
 from app.utils.rentry.wrapper import RentryUpload
 from app.utils.schema import generate_rimworld_mods_list
 from app.utils.workshop_previews import fetch_workshop_preview_urls
@@ -173,7 +173,7 @@ class ImportExportService:
         truncated_note = " (truncated)" if truncated else ""
         report = (
             "# RimWorld mod list       "
-            "![](https://github.com/RimSort/RimSort/blob/main/docs/rentry_preview.png?raw=true)"
+            f"![]({APP_REPOSITORY_URL}/blob/main/docs/rentry_preview.png?raw=true)"
             f"\nCreated with {APP_DISPLAY_NAME} {AppInfo().app_version}"
             f"\nMod list was created for game version: `{self.metadata_controller.game_version}`"
             "\n!!! info Local mods are marked as yellow labels with packageid in brackets."
@@ -209,7 +209,7 @@ class ImportExportService:
                         + "?imw=100&imh=100&impolicy=Letterbox"
                     )
                 else:
-                    preview_url = "https://github.com/RimSort/RimSort/blob/main/docs/rentry_steam_icon.png?raw=true"
+                    preview_url = f"{APP_REPOSITORY_URL}/blob/main/docs/rentry_steam_icon.png?raw=true"
                 url = steam_url or mod_url
                 if url:
                     report += (
